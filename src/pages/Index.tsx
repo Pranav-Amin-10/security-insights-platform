@@ -1,7 +1,7 @@
 
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
-import { Shield, FileText, Shield } from "lucide-react";
+import { Shield, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
