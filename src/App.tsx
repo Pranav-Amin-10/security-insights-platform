@@ -5,7 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import VAPTModule from "./pages/VAPTModule";
+import ComplianceModule from "./pages/ComplianceModule";
+import SSLModule from "./pages/SSLModule";
+import Dashboard from "./pages/Dashboard";
 
+// Create a new QueryClient instance
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -15,7 +20,10 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/vapt" element={<VAPTModule />} />
+          <Route path="/compliance" element={<ComplianceModule />} />
+          <Route path="/ssl" element={<SSLModule />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
