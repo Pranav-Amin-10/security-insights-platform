@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
@@ -18,7 +17,6 @@ import {
 } from "@/lib/api-utils";
 import { generateVAPTReport } from "@/lib/pdf-utils";
 
-// Define the stages of penetration testing
 const initialStages: VAPTStage[] = [
   {
     id: 1,
@@ -99,25 +97,21 @@ const VAPTModule = () => {
   const [scanResults, setScanResults] = useState<VAPTScanResults | null>(null);
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
   
-  // Form states
   const [targetSystem, setTargetSystem] = useState<string>("");
   const [scopeDetails, setScopeDetails] = useState<string>("");
   const [testingMethod, setTestingMethod] = useState<string>("black-box");
+  const [isAutomating, setIsAutomating] = useState<boolean>(false);
   
-  // Move to the next stage
   const nextStage = async () => {
     if (activeStage >= stages.length) return;
     
     setLoading(true);
     
-    // Simulate processing time
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Update the current stage as completed
     const updatedStages = [...stages];
     updatedStages[activeStage - 1].completed = true;
     
-    // Simulate different actions based on the stage
     switch (activeStage) {
       case 1: // Planning
         updatedStages[activeStage - 1].results = {
@@ -202,7 +196,6 @@ const VAPTModule = () => {
         break;
         
       case 8: // Reporting
-        // Generate the scan results object
         const resultsObj: VAPTScanResults = {
           id: `scan-${Date.now()}`,
           timestamp: new Date().toISOString(),
@@ -249,7 +242,6 @@ const VAPTModule = () => {
           }))
         };
         
-        // Save the full results to Supabase
         if (scanResults) {
           try {
             await saveVAPTResults({
@@ -266,16 +258,19 @@ const VAPTModule = () => {
     setStages(updatedStages);
     setActiveStage(activeStage + 1);
     setLoading(false);
+    
+    if (isAutomating && activeStage < stages.length) {
+      setTimeout(() => nextStage(), 2000);
+    }
   };
   
-  // Go back to the previous stage
   const prevStage = () => {
     if (activeStage <= 1) return;
     setActiveStage(activeStage - 1);
   };
   
-  // Reset the scan
   const resetScan = () => {
+    setIsAutomating(false);
     setActiveStage(1);
     setStages(initialStages);
     setScanResults(null);
@@ -285,7 +280,12 @@ const VAPTModule = () => {
     setTestingMethod("black-box");
   };
   
-  // Download the report
+  const startAutomatedScan = () => {
+    if (!targetSystem) return;
+    setIsAutomating(true);
+    nextStage();
+  };
+  
   const downloadReport = () => {
     if (!scanResults) return;
     
@@ -303,7 +303,6 @@ const VAPTModule = () => {
           </p>
         </div>
         
-        {/* Progress Bar */}
         <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
           <div 
             className="bg-blue-600 h-2.5 rounded-full" 
@@ -311,7 +310,6 @@ const VAPTModule = () => {
           ></div>
         </div>
         
-        {/* Stage Navigation */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-6">
           {stages.map((stage) => (
             <button
@@ -331,14 +329,12 @@ const VAPTModule = () => {
           ))}
         </div>
         
-        {/* Stage Content */}
         <Card className="p-6">
           <h2 className="text-xl font-semibold mb-4">
             Stage {activeStage}: {stages[activeStage - 1]?.name}
           </h2>
           <p className="text-gray-600 mb-6">{stages[activeStage - 1]?.description}</p>
           
-          {/* Stage-specific content */}
           {activeStage === 1 && (
             <div className="space-y-4">
               <div>
@@ -379,10 +375,27 @@ const VAPTModule = () => {
                   <option value="gray-box">Gray Box Testing</option>
                 </select>
               </div>
+              
+              <div className="flex justify-end mt-8">
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={startAutomatedScan}
+                  disabled={!targetSystem}
+                >
+                  {loading ? (
+                    <>
+                      <Clock className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Start Automated Scan"
+                  )}
+                </Button>
+              </div>
             </div>
           )}
           
-          {activeStage === 2 && stages[1].completed && (
+          {activeStage > 1 && activeStage <= stages.length && (
             <div className="space-y-4">
               <Tabs defaultValue="shodan">
                 <TabsList className="mb-4">
@@ -687,7 +700,7 @@ const VAPTModule = () => {
                         <div 
                           key={index} 
                           className={`border rounded-md overflow-hidden ${
-                            vuln.severity === 'Critical' ? 'border-red-300 bg-red-50' : 'border-orange-300 bg-orange-50'
+                            vuln.severity === 'Critical' ? 'border-red-300' : 'border-orange-300'
                           }`}
                         >
                           <div className={`px-4 py-2 ${
@@ -911,35 +924,35 @@ const VAPTModule = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
                     <div className="bg-red-100 p-3 rounded-md text-center">
-                      <div className="text-xl font-bold text-red-800">
+                      <div className="text-2xl font-bold text-red-800">
                         {scanResults?.summary.criticalCount || 0}
                       </div>
                       <div className="text-xs font-medium text-red-600">Critical</div>
                     </div>
                     
                     <div className="bg-orange-100 p-3 rounded-md text-center">
-                      <div className="text-xl font-bold text-orange-800">
+                      <div className="text-2xl font-bold text-orange-800">
                         {scanResults?.summary.highCount || 0}
                       </div>
                       <div className="text-xs font-medium text-orange-600">High</div>
                     </div>
                     
                     <div className="bg-yellow-100 p-3 rounded-md text-center">
-                      <div className="text-xl font-bold text-yellow-800">
+                      <div className="text-2xl font-bold text-yellow-800">
                         {scanResults?.summary.mediumCount || 0}
                       </div>
                       <div className="text-xs font-medium text-yellow-600">Medium</div>
                     </div>
                     
                     <div className="bg-blue-100 p-3 rounded-md text-center">
-                      <div className="text-xl font-bold text-blue-800">
+                      <div className="text-2xl font-bold text-blue-800">
                         {scanResults?.summary.lowCount || 0}
                       </div>
                       <div className="text-xs font-medium text-blue-600">Low</div>
                     </div>
                     
                     <div className="bg-gray-100 p-3 rounded-md text-center">
-                      <div className="text-xl font-bold text-gray-800">
+                      <div className="text-2xl font-bold text-gray-800">
                         {scanResults?.summary.infoCount || 0}
                       </div>
                       <div className="text-xs font-medium text-gray-600">Info</div>
@@ -1079,7 +1092,6 @@ const VAPTModule = () => {
             </div>
           )}
           
-          {/* If all stages are complete, show a summary */}
           {activeStage > stages.length && (
             <div className="space-y-4">
               <div className="bg-green-50 p-6 rounded-md border border-green-200 text-center">
@@ -1106,7 +1118,6 @@ const VAPTModule = () => {
                 </div>
               </div>
               
-              {/* Summary Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                 <div className="bg-white border border-gray-200 rounded-md p-4">
                   <h4 className="text-sm font-medium text-gray-500 mb-1">Vulnerabilities</h4>
@@ -1136,47 +1147,45 @@ const VAPTModule = () => {
             </div>
           )}
           
-          {/* Stage Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            <Button 
-              variant="outline" 
-              onClick={prevStage}
-              disabled={activeStage <= 1 || loading}
-            >
-              Previous Stage
-            </Button>
-            
-            {activeStage <= stages.length ? (
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={nextStage}
-                disabled={
-                  // Disable if loading or if in planning stage without target
-                  loading || (activeStage === 1 && !targetSystem)
-                }
-              >
-                {loading ? (
-                  <>
-                    <Clock className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  `Next Stage: ${
-                    activeStage < stages.length 
-                      ? stages[activeStage].name 
-                      : "Complete"
-                  }`
-                )}
-              </Button>
-            ) : (
+          {!isAutomating && activeStage > 1 && (
+            <div className="flex justify-between mt-8">
               <Button 
                 variant="outline" 
-                onClick={resetScan}
+                onClick={prevStage}
+                disabled={activeStage <= 1 || loading}
               >
-                Start New Scan
+                Previous Stage
               </Button>
-            )}
-          </div>
+              
+              {activeStage <= stages.length ? (
+                <Button 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={nextStage}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Clock className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Next Stage: ${
+                      activeStage < stages.length 
+                        ? stages[activeStage].name 
+                        : "Complete"
+                    }`
+                  )}
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  onClick={resetScan}
+                >
+                  Start New Scan
+                </Button>
+              )}
+            </div>
+          )}
         </Card>
       </div>
     </Layout>
