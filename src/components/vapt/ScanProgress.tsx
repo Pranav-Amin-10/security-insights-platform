@@ -14,7 +14,7 @@ export const ScanProgress: React.FC<ScanProgressProps> = ({
   activeStage,
   progress
 }) => {
-  // Ensure we have valid stages and activeStage before rendering
+  // Ensure we have valid stages before rendering
   if (!stages || stages.length === 0) {
     return null;
   }

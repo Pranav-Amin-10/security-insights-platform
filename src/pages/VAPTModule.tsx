@@ -30,7 +30,7 @@ const VAPTModule = () => {
   const [formValues, setFormValues] = useState<VAPTFormValues>({
     targetSystem: "",
     scopeDetails: "",
-    testingMethod: "black-box"
+    testingMethod: "black-box" // Keep this for data structure compatibility
   });
 
   const handleFormChange = (values: Partial<VAPTFormValues>) => {
@@ -38,7 +38,7 @@ const VAPTModule = () => {
   };
 
   // Determine whether to show the results component
-  const shouldShowResults = scanComplete && showResults && scanResults !== null;
+  const shouldShowResults = Boolean(scanComplete && showResults && scanResults);
 
   return (
     <Layout>
@@ -51,7 +51,7 @@ const VAPTModule = () => {
           </p>
         </div>
 
-        {!scanComplete && !scanError && isAutomating && (
+        {!scanComplete && !scanError && isAutomating && stages && stages.length > 0 && (
           <ScanProgress
             stages={stages}
             activeStage={activeStage}
@@ -78,11 +78,13 @@ const VAPTModule = () => {
               <p className="text-gray-600">
                 Currently processing:{" "}
                 <span className="font-medium">
-                  {stages[activeStage - 1]?.name || "Completing scan"}
+                  {stages && activeStage > 0 && activeStage <= stages.length 
+                    ? stages[activeStage - 1]?.name || "Completing scan"
+                    : "Initializing scan"}
                 </span>
               </p>
               <p className="text-gray-500 text-sm mt-2">
-                Stage {activeStage} of {stages.length} complete ({progress}%)
+                Stage {activeStage} of {stages ? stages.length : 9} complete ({progress}%)
               </p>
             </div>
           )}
@@ -105,8 +107,8 @@ const VAPTModule = () => {
           {shouldShowResults && scanResults && (
             <ScanResults
               scanResults={scanResults}
-              vulnerabilities={vulnerabilities}
-              stages={stages}
+              vulnerabilities={vulnerabilities || []}
+              stages={stages || []}
               testingMethod={formValues.testingMethod}
               onDownloadReport={downloadReport}
               onResetScan={resetScan}
