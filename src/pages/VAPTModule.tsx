@@ -37,6 +37,9 @@ const VAPTModule = () => {
     setFormValues((prev) => ({ ...prev, ...values }));
   };
 
+  // Determine whether to show the results component
+  const shouldShowResults = scanComplete && showResults && scanResults !== null;
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -99,7 +102,7 @@ const VAPTModule = () => {
             </div>
           )}
 
-          {scanComplete && showResults && scanResults && (
+          {shouldShowResults && scanResults && (
             <ScanResults
               scanResults={scanResults}
               vulnerabilities={vulnerabilities}

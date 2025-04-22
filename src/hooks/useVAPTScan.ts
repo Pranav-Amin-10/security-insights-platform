@@ -90,8 +90,14 @@ export const useVAPTScan = () => {
   const [showResults, setShowResults] = useState<boolean>(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
+  const [formValues, setFormValues] = useState<VAPTFormValues>({
+    targetSystem: "",
+    scopeDetails: "",
+    testingMethod: "black-box"
+  });
 
-  const processStage = async (stageNumber: number) => {
+  const processStage = async (stageNumber: number, currentFormValues: VAPTFormValues) => {
+    // Check if we've completed all stages
     if (stageNumber > stages.length) {
       setScanComplete(true);
       setIsAutomating(false);
@@ -102,23 +108,30 @@ export const useVAPTScan = () => {
       return;
     }
 
-    setActiveStage(stageNumber);
-    // Update progress calculation for 9 stages
-    setProgress(Math.min(100, Math.floor((stageNumber - 1) * (100 / stages.length))));
-
     try {
+      setActiveStage(stageNumber);
+      // Update progress - ensure it's a valid number between 0-100
+      const newProgress = Math.min(100, Math.floor(((stageNumber - 1) / stages.length) * 100));
+      setProgress(newProgress);
+
       const updatedStages = [...stages];
       let generatedVulns: Vulnerability[] = [];
 
+      // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       switch (stageNumber) {
         case 1: // Reconnaissance
           try {
-            const shodanResults = await shodanReconnaissance(formValues.targetSystem);
-            const ipInfo = await getIPInfo(formValues.targetSystem);
-            const whois = await getWHOIS(formValues.targetSystem);
-            const dnsRecords = await getDNSRecords(formValues.targetSystem);
+            // Ensure we have a target before proceeding
+            if (!currentFormValues.targetSystem) {
+              throw new Error("No target system specified");
+            }
+
+            const shodanResults = await shodanReconnaissance(currentFormValues.targetSystem);
+            const ipInfo = await getIPInfo(currentFormValues.targetSystem);
+            const whois = await getWHOIS(currentFormValues.targetSystem);
+            const dnsRecords = await getDNSRecords(currentFormValues.targetSystem);
             
             const recordTypes = Object.keys(dnsRecords || {})
               .filter(key => !['records', 'analysisTimestamp', 'recordTypes'].includes(key))
@@ -136,34 +149,41 @@ export const useVAPTScan = () => {
                 lastUpdate: new Date().toISOString(),
                 detectedServices: shodanResults?.ports || [],
                 vulnerabilities: shodanResults?.vulns || [],
-                ip: formValues.targetSystem,
+                ip: currentFormValues.targetSystem,
                 ports: shodanResults?.ports || [],
                 hostnames: shodanResults?.hostnames || [],
                 os: shodanResults?.os || 'Unknown'
               },
-              ipInfo,
+              ipInfo: {
+                ...(ipInfo || {}),
+                geolocation: ipInfo?.geolocation || { latitude: null, longitude: null, accuracy: null },
+                network: ipInfo?.network || { asn: 'Unknown', provider: 'Unknown', type: 'Unknown' }
+              },
               whois: {
                 registrationDetails: {
                   registrar: whois?.registrar || 'Unknown',
                   createdDate: whois?.creation_date || 'Unknown',
-                  expiryDate: whois?.expiration_date || 'Unknown'
+                  expiryDate: whois?.expiration_date || 'Unknown',
+                  lastUpdated: whois?.updated_date || 'Unknown'
                 },
                 contactInfo: {
                   technical: whois?.tech_email || 'Not available',
                   administrative: whois?.admin_email || 'Not available'
                 },
-                domain_name: formValues.targetSystem
+                domain_name: currentFormValues.targetSystem
               },
               dnsRecords: {
-                ...dnsRecords,
+                ...(dnsRecords || {}),
                 records: Object.entries(dnsRecords || {}),
                 analysisTimestamp: new Date().toISOString(),
-                recordTypes
+                recordTypes: recordTypes || []
               }
             };
           } catch (error) {
             console.error("Error during reconnaissance:", error);
             toast.error("Error during reconnaissance phase, but continuing scan");
+            
+            // Provide fallback data if reconnaissance fails
             updatedStages[stageNumber - 1].results = {
               error: "Reconnaissance failed",
               errorDetails: error instanceof Error ? error.message : 'Unknown error',
@@ -171,7 +191,7 @@ export const useVAPTScan = () => {
                 lastUpdate: new Date().toISOString(),
                 detectedServices: [],
                 vulnerabilities: [],
-                ip: formValues.targetSystem,
+                ip: currentFormValues.targetSystem,
                 ports: [],
                 hostnames: [],
                 os: 'Unknown'
@@ -184,13 +204,14 @@ export const useVAPTScan = () => {
                 registrationDetails: {
                   registrar: 'Unknown',
                   createdDate: 'Unknown',
-                  expiryDate: 'Unknown'
+                  expiryDate: 'Unknown',
+                  lastUpdated: 'Unknown'
                 },
                 contactInfo: {
                   technical: 'Not available',
                   administrative: 'Not available'
                 },
-                domain_name: formValues.targetSystem
+                domain_name: currentFormValues.targetSystem
               },
               dnsRecords: {
                 records: [],
@@ -312,16 +333,21 @@ export const useVAPTScan = () => {
           break;
 
         case 9: // Remediation Verification
+          const verificationResults = vulnerabilities.map(v => ({
+            vulnerability: v,
+            verified: Math.random() > 0.3,
+            notes: Math.random() > 0.3 ? 'Successfully remediated' : 'Still vulnerable, needs further attention'
+          }));
+          
           updatedStages[stageNumber - 1].results = {
-            verificationResults: vulnerabilities.map(v => ({
-              vulnerability: v,
-              verified: Math.random() > 0.3,
-              notes: Math.random() > 0.3 ? 'Successfully remediated' : 'Still vulnerable, needs further attention'
-            }))
+            verificationResults
           };
           
+          // Create final results object
           const finalResultsObj: VAPTScanResults = {
-            ...scanResults!,
+            id: scanResults?.id || `scan-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            target: currentFormValues.targetSystem,
             stages: updatedStages,
             vulnerabilities,
             summary: {
@@ -342,13 +368,118 @@ export const useVAPTScan = () => {
             toast.error("Error saving scan results");
           }
           break;
+          
+        default:
+          // Default case for stages 2-8
+          if (stageNumber === 2) { // Scanning
+            generatedVulns = generateVulnerabilities(Math.floor(Math.random() * 8) + 8);
+            setVulnerabilities(generatedVulns);
+              
+            updatedStages[stageNumber - 1].results = {
+              openPorts: [80, 443, 22, 21, 3389, 8080].filter(() => Math.random() > 0.3),
+              services: [
+                { port: 80, service: 'http', version: 'nginx 1.18.0' },
+                { port: 443, service: 'https', version: 'nginx 1.18.0' },
+                { port: 22, service: 'ssh', version: 'OpenSSH 7.6p1' },
+              ],
+              vulnerabilities: generatedVulns
+            };
+          } else if (stageNumber === 3) { // Vulnerability Analysis
+            updatedStages[stageNumber - 1].results = {
+              criticalVulns: vulnerabilities.filter(v => v.severity === 'Critical'),
+              highVulns: vulnerabilities.filter(v => v.severity === 'High'),
+              mediumVulns: vulnerabilities.filter(v => v.severity === 'Medium'),
+              lowVulns: vulnerabilities.filter(v => v.severity === 'Low'),
+              infoVulns: vulnerabilities.filter(v => v.severity === 'Info')
+            };
+          } else if (stageNumber === 4) { // Exploitation
+            const exploitableVulns = vulnerabilities.filter(v => 
+              v.severity === 'Critical' || v.severity === 'High'
+            );
+            
+            updatedStages[stageNumber - 1].results = {
+              exploited: exploitableVulns.map(v => ({
+                vulnerability: v,
+                exploitResult: Math.random() > 0.3 ? 'Success' : 'Failed',
+                details: `Attempted to exploit ${v.name} using common techniques.`
+              }))
+            };
+          } else if (stageNumber === 5) { // Post Exploitation
+            updatedStages[stageNumber - 1].results = {
+              accessMaintained: Math.random() > 0.5,
+              dataAccessed: ['Configuration files', 'User credentials', 'Database connection strings'],
+              persistenceMechanisms: ['Scheduled task', 'Modified startup items']
+            };
+          } else if (stageNumber === 6) { // Analysis
+            updatedStages[stageNumber - 1].results = {
+              riskAssessment: {
+                businessImpact: 'High',
+                dataCompromiseRisk: 'Medium',
+                operationalImpact: 'Medium'
+              },
+              attackVectors: ['Remote exploit', 'Credential compromise'],
+              rootCauses: ['Outdated software', 'Weak authentication', 'Misconfiguration']
+            };
+          } else if (stageNumber === 7) { // Reporting
+            const criticalCount = vulnerabilities.filter(v => v.severity === 'Critical').length;
+            const highCount = vulnerabilities.filter(v => v.severity === 'High').length;
+            const mediumCount = vulnerabilities.filter(v => v.severity === 'Medium').length;
+            const lowCount = vulnerabilities.filter(v => v.severity === 'Low').length;
+            const infoCount = vulnerabilities.filter(v => v.severity === 'Info').length;
+            
+            const resultsObj: VAPTScanResults = {
+              id: `scan-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              target: currentFormValues.targetSystem,
+              stages: updatedStages,
+              vulnerabilities,
+              summary: {
+                criticalCount,
+                highCount,
+                mediumCount,
+                lowCount,
+                infoCount
+              }
+            };
+            
+            setScanResults(resultsObj);
+            updatedStages[stageNumber - 1].results = {
+              reportGenerated: true,
+              reportTimestamp: new Date().toISOString(),
+              vulnerability_counts: {
+                critical: criticalCount,
+                high: highCount,
+                medium: mediumCount,
+                low: lowCount,
+                info: infoCount
+              }
+            };
+          } else if (stageNumber === 8) { // Remediation Planning
+            updatedStages[stageNumber - 1].results = {
+              remediationItems: vulnerabilities.map(v => ({
+                vulnerability: v,
+                priority: v.severity === 'Critical' ? 'Immediate' : 
+                          v.severity === 'High' ? 'High' :
+                          v.severity === 'Medium' ? 'Medium' : 'Low',
+                suggestedFix: v.remediation || `Update and patch the affected component to address ${v.name}.`,
+                timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
+                            v.severity === 'High' ? '1 week' :
+                            v.severity === 'Medium' ? '2 weeks' : '1 month'
+              }))
+            };
+          }
+          break;
       }
 
+      // Mark this stage as completed
       updatedStages[stageNumber - 1].completed = true;
       setStages(updatedStages);
 
+      // Short delay before moving to next stage
       await new Promise(resolve => setTimeout(resolve, 2000));
-      processStage(stageNumber + 1);
+      
+      // Process the next stage
+      processStage(stageNumber + 1, currentFormValues);
 
     } catch (error) {
       console.error(`Error processing stage ${stageNumber}:`, error);
@@ -359,18 +490,13 @@ export const useVAPTScan = () => {
     }
   };
 
-  const [formValues, setFormValues] = useState<VAPTFormValues>({
-    targetSystem: "",
-    scopeDetails: "",
-    testingMethod: "black-box"
-  });
-
-  const startAutomatedScan = (formValues: VAPTFormValues) => {
-    if (!formValues.targetSystem) {
+  const startAutomatedScan = (scanFormValues: VAPTFormValues) => {
+    if (!scanFormValues.targetSystem) {
       toast.error("Please enter a target system before starting the scan");
       return;
     }
 
+    // Reset state for new scan
     setScanError(null);
     setProgress(0);
     toast.info("Starting automated VAPT scan...");
@@ -378,18 +504,21 @@ export const useVAPTScan = () => {
     setShowResults(false);
     setScanComplete(false);
     setLoading(true);
+    setScanResults(null);
 
-    setStages(initialStages);
+    // Reset stages to initial state
+    setStages([...initialStages]);
     setActiveStage(1);
-    setFormValues(formValues);
+    setFormValues(scanFormValues);
 
-    processStage(1);
+    // Start scanning process
+    processStage(1, scanFormValues);
   };
 
   const resetScan = () => {
     setIsAutomating(false);
     setActiveStage(1);
-    setStages(initialStages);
+    setStages([...initialStages]);
     setScanResults(null);
     setVulnerabilities([]);
     setScanComplete(false);
