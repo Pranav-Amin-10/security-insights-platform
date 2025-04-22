@@ -12,6 +12,8 @@ export type StageResults = {
 };
 
 export type ReconnaissanceResults = {
+  error?: string;
+  errorDetails?: string;
   shodan: {
     lastUpdate: string;
     detectedServices: string[];
