@@ -14,7 +14,6 @@ interface ScanResultsProps {
   scanResults: VAPTScanResults;
   vulnerabilities: Vulnerability[];
   stages: VAPTStage[];
-  testingMethod: string;
   onDownloadReport: () => void;
   onResetScan: () => void;
 }
@@ -23,7 +22,6 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
   scanResults,
   vulnerabilities,
   stages,
-  testingMethod,
   onDownloadReport,
   onResetScan,
 }) => {
@@ -50,17 +48,13 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
             </p>
             <p>{vulnerabilities.length}</p>
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500">Testing Method</p>
-            <p className="capitalize">{testingMethod}</p>
-          </div>
         </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-md p-4">
         <h3 className="text-lg font-medium mb-2">Risk Assessment</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Object.entries(stages[6]?.results?.riskAssessment || {}).map(
+          {Object.entries(stages[5]?.results?.riskAssessment || {}).map(
             ([key, value]) => (
               <div
                 key={key}
@@ -81,7 +75,7 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
   );
 
   const renderReconnaissanceTab = () => {
-    const reconResults = stages[1]?.results as ReconnaissanceResults;
+    const reconResults = stages[0]?.results as ReconnaissanceResults;
     if (!reconResults || reconResults.error) {
       return (
         <div className="p-4 bg-red-50 border border-red-200 rounded-md">
@@ -319,7 +313,7 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
   );
 
   const renderRemediationTab = () => {
-    const remediationItems = stages[8]?.results?.remediationItems || [];
+    const remediationItems = stages[7]?.results?.remediationItems || [];
     
     return (
       <div className="space-y-4">

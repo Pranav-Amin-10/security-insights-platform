@@ -4,7 +4,6 @@ import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
 export type VAPTFormValues = {
   targetSystem: string;
   scopeDetails: string;
-  testingMethod: "black-box" | "white-box" | "gray-box";
 };
 
 export type StageResults = {
