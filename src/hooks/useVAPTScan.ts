@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
 import { VAPTFormValues } from "@/types/vapt";
@@ -16,69 +15,62 @@ import { generateVAPTReport } from "@/lib/pdf-utils";
 const initialStages: VAPTStage[] = [
   {
     id: 1,
-    name: "Planning",
-    description: "Define objectives, scope, and target systems",
-    completed: false,
-    results: null
-  },
-  {
-    id: 2,
     name: "Reconnaissance",
     description: "Gather information about the target",
     completed: false,
     results: null
   },
   {
-    id: 3,
+    id: 2,
     name: "Scanning",
     description: "Identify vulnerabilities and open ports",
     completed: false,
     results: null
   },
   {
-    id: 4,
+    id: 3,
     name: "Vulnerability Analysis",
     description: "Analyze and categorize discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 5,
+    id: 4,
     name: "Exploitation",
     description: "Attempt to exploit discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 6,
+    id: 5,
     name: "Post Exploitation",
     description: "Maintain access and explore the system",
     completed: false,
     results: null
   },
   {
-    id: 7,
+    id: 6,
     name: "Analysis",
     description: "Analyze findings and determine impact",
     completed: false,
     results: null
   },
   {
-    id: 8,
+    id: 7,
     name: "Reporting",
     description: "Document findings and recommendations",
     completed: false,
     results: null
   },
   {
-    id: 9,
+    id: 8,
     name: "Remediation Planning",
     description: "Plan for addressing discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 10,
+    id: 9,
     name: "Remediation Verification",
     description: "Verify that remediation efforts were successful",
     completed: false,
@@ -110,33 +102,16 @@ export const useVAPTScan = () => {
     }
 
     setActiveStage(stageNumber);
-    setProgress(Math.min(100, Math.floor((stageNumber - 1) * 10)));
+    setProgress(Math.min(100, Math.floor((stageNumber - 1) * 11.11)));
 
     try {
       const updatedStages = [...stages];
+      let generatedVulns: Vulnerability[] = [];
 
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       switch (stageNumber) {
-        case 1: // Planning
-          updatedStages[stageNumber - 1].results = {
-            target: formValues.targetSystem,
-            scope: formValues.scopeDetails,
-            method: formValues.testingMethod,
-            timestamp: new Date().toISOString(),
-            details: {
-              targetType: formValues.targetSystem.includes('.') ? 'Domain' : 'IP Address',
-              assessmentScope: formValues.scopeDetails || 'Full system assessment',
-              methodology: formValues.testingMethod === 'black-box' ? 
-                'No prior knowledge of the system' : 
-                formValues.testingMethod === 'white-box' ? 
-                'Complete system knowledge and access' : 
-                'Limited system knowledge'
-            }
-          };
-          break;
-          
-        case 2: // Reconnaissance
+        case 1: // Reconnaissance
           try {
             const shodanResults = await shodanReconnaissance(formValues.targetSystem);
             const ipInfo = await getIPInfo(formValues.targetSystem);
@@ -159,55 +134,44 @@ export const useVAPTScan = () => {
                 lastUpdate: new Date().toISOString(),
                 detectedServices: shodanResults?.ports || [],
                 vulnerabilities: shodanResults?.vulns || [],
-                ip: shodanResults?.ip || formValues.targetSystem
+                ip: formValues.targetSystem,
+                ports: shodanResults?.ports || [],
+                hostnames: shodanResults?.hostnames || [],
+                os: shodanResults?.os || 'Unknown'
               },
-              ipInfo: {
-                ...ipInfo,
-                geolocation: {
-                  latitude: parseFloat(ipInfo?.loc?.split(',')[0]) || null,
-                  longitude: parseFloat(ipInfo?.loc?.split(',')[1]) || null,
-                  accuracy: null
-                },
-                network: {
-                  asn: (ipInfo?.org || '').split(' ')[0] || '',
-                  provider: (ipInfo?.org || '').split(' ').slice(1).join(' ') || '',
-                  type: 'Unknown'
-                }
-              },
+              ipInfo,
               whois: {
-                ...whois,
                 registrationDetails: {
                   registrar: whois?.registrar || 'Unknown',
                   createdDate: whois?.creation_date || 'Unknown',
-                  expiryDate: whois?.expiration_date || 'Unknown',
-                  lastUpdated: whois?.updated_date || 'Unknown'
+                  expiryDate: whois?.expiration_date || 'Unknown'
                 },
                 contactInfo: {
-                  technical: whois?.emails?.[0] || 'Not available',
-                  administrative: whois?.emails?.[1] || 'Not available'
+                  technical: whois?.tech_email || 'Not available',
+                  administrative: whois?.admin_email || 'Not available'
                 }
               },
               dnsRecords: {
                 ...dnsRecords,
                 records: Object.entries(dnsRecords || {}),
                 analysisTimestamp: new Date().toISOString(),
-                recordTypes: recordTypes
+                recordTypes
               }
             };
-            
-            console.log("Reconnaissance results:", updatedStages[stageNumber - 1].results);
           } catch (error) {
             console.error("Error during reconnaissance:", error);
             toast.error("Error during reconnaissance phase, but continuing scan");
-            updatedStages[stageNumber - 1].results = { 
+            updatedStages[stageNumber - 1].results = {
               error: "Reconnaissance failed",
               errorDetails: error instanceof Error ? error.message : 'Unknown error',
-              timestamp: new Date().toISOString(),
               shodan: {
                 lastUpdate: new Date().toISOString(),
                 detectedServices: [],
                 vulnerabilities: [],
-                ip: formValues.targetSystem
+                ip: formValues.targetSystem,
+                ports: [],
+                hostnames: [],
+                os: 'Unknown'
               },
               ipInfo: {
                 geolocation: { latitude: null, longitude: null, accuracy: null },
@@ -232,35 +196,23 @@ export const useVAPTScan = () => {
             };
           }
           break;
-          
-        case 3: // Scanning
-          try {
-            // Generate between 8-15 vulnerabilities for better testing
-            const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 8) + 8);
-            setVulnerabilities(scanVulnerabilities);
+
+        case 2: // Scanning
+          generatedVulns = generateVulnerabilities(Math.floor(Math.random() * 8) + 8);
+          setVulnerabilities(generatedVulns);
             
-            updatedStages[stageNumber - 1].results = {
-              openPorts: [80, 443, 22, 21, 3389, 8080].filter(() => Math.random() > 0.3),
-              services: [
-                { port: 80, service: 'http', version: 'nginx 1.18.0' },
-                { port: 443, service: 'https', version: 'nginx 1.18.0' },
-                { port: 22, service: 'ssh', version: 'OpenSSH 7.6p1' },
-              ],
-              vulnerabilities: scanVulnerabilities
-            };
-          } catch (error) {
-            console.error("Error during scanning:", error);
-            toast.error("Error during scanning phase, but continuing scan");
-            updatedStages[stageNumber - 1].results = { 
-              error: "Scanning failed",
-              openPorts: [],
-              services: [],
-              vulnerabilities: []
-            };
-          }
+          updatedStages[stageNumber - 1].results = {
+            openPorts: [80, 443, 22, 21, 3389, 8080].filter(() => Math.random() > 0.3),
+            services: [
+              { port: 80, service: 'http', version: 'nginx 1.18.0' },
+              { port: 443, service: 'https', version: 'nginx 1.18.0' },
+              { port: 22, service: 'ssh', version: 'OpenSSH 7.6p1' },
+            ],
+            vulnerabilities: generatedVulns
+          };
           break;
-          
-        case 4: // Vulnerability Analysis
+
+        case 3: // Vulnerability Analysis
           updatedStages[stageNumber - 1].results = {
             criticalVulns: vulnerabilities.filter(v => v.severity === 'Critical'),
             highVulns: vulnerabilities.filter(v => v.severity === 'High'),
@@ -269,8 +221,8 @@ export const useVAPTScan = () => {
             infoVulns: vulnerabilities.filter(v => v.severity === 'Info')
           };
           break;
-          
-        case 5: // Exploitation
+
+        case 4: // Exploitation
           const exploitableVulns = vulnerabilities.filter(v => 
             v.severity === 'Critical' || v.severity === 'High'
           );
@@ -283,16 +235,16 @@ export const useVAPTScan = () => {
             }))
           };
           break;
-          
-        case 6: // Post Exploitation
+
+        case 5: // Post Exploitation
           updatedStages[stageNumber - 1].results = {
             accessMaintained: Math.random() > 0.5,
             dataAccessed: ['Configuration files', 'User credentials', 'Database connection strings'],
             persistenceMechanisms: ['Scheduled task', 'Modified startup items']
           };
           break;
-          
-        case 7: // Analysis
+
+        case 6: // Analysis
           updatedStages[stageNumber - 1].results = {
             riskAssessment: {
               businessImpact: 'High',
@@ -303,9 +255,8 @@ export const useVAPTScan = () => {
             rootCauses: ['Outdated software', 'Weak authentication', 'Misconfiguration']
           };
           break;
-          
-        case 8: // Reporting
-          // Create summary counts from actual vulnerabilities
+
+        case 7: // Reporting
           const criticalCount = vulnerabilities.filter(v => v.severity === 'Critical').length;
           const highCount = vulnerabilities.filter(v => v.severity === 'High').length;
           const mediumCount = vulnerabilities.filter(v => v.severity === 'Medium').length;
@@ -330,12 +281,18 @@ export const useVAPTScan = () => {
           setScanResults(resultsObj);
           updatedStages[stageNumber - 1].results = {
             reportGenerated: true,
-            reportTimestamp: new Date().toISOString()
+            reportTimestamp: new Date().toISOString(),
+            vulnerability_counts: {
+              critical: criticalCount,
+              high: highCount,
+              medium: mediumCount,
+              low: lowCount,
+              info: infoCount
+            }
           };
           break;
-          
-        case 9: // Remediation Planning
-          // Create remediation items based on actual vulnerabilities
+
+        case 8: // Remediation Planning
           updatedStages[stageNumber - 1].results = {
             remediationItems: vulnerabilities.map(v => ({
               vulnerability: v,
@@ -344,13 +301,13 @@ export const useVAPTScan = () => {
                         v.severity === 'Medium' ? 'Medium' : 'Low',
               suggestedFix: v.remediation || `Update and patch the affected component to address ${v.name}.`,
               timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
-                            v.severity === 'High' ? '1 week' :
-                            v.severity === 'Medium' ? '2 weeks' : '1 month'
+                          v.severity === 'High' ? '1 week' :
+                          v.severity === 'Medium' ? '2 weeks' : '1 month'
             }))
           };
           break;
-          
-        case 10: // Remediation Verification
+
+        case 9: // Remediation Verification
           updatedStages[stageNumber - 1].results = {
             verificationResults: vulnerabilities.map(v => ({
               vulnerability: v,
@@ -359,11 +316,8 @@ export const useVAPTScan = () => {
             }))
           };
           
-          // Create final scan results with updated summary counts
           const finalResultsObj: VAPTScanResults = {
-            id: scanResults?.id || `scan-${Date.now()}`,
-            timestamp: scanResults?.timestamp || new Date().toISOString(),
-            target: formValues.targetSystem,
+            ...scanResults!,
             stages: updatedStages,
             vulnerabilities,
             summary: {
@@ -389,7 +343,7 @@ export const useVAPTScan = () => {
       updatedStages[stageNumber - 1].completed = true;
       setStages(updatedStages);
 
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       processStage(stageNumber + 1);
 
     } catch (error) {
