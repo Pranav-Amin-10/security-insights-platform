@@ -114,8 +114,7 @@ export const useVAPTScan = () => {
     try {
       const updatedStages = [...stages];
 
-      // Add a delay between stages for better visibility
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
       switch (stageNumber) {
         case 1: // Planning
@@ -143,6 +142,16 @@ export const useVAPTScan = () => {
             const whois = await getWHOIS(formValues.targetSystem);
             const dnsRecords = await getDNSRecords(formValues.targetSystem);
             
+            const recordTypes = Object.keys(dnsRecords || {})
+              .filter(key => !['records', 'analysisTimestamp', 'recordTypes'].includes(key))
+              .map(type => {
+                const records = dnsRecords[type] || [];
+                return {
+                  type,
+                  records: Array.isArray(records) ? records : [records]
+                };
+              });
+            
             updatedStages[stageNumber - 1].results = {
               shodan: {
                 ...shodanResults,
@@ -153,52 +162,77 @@ export const useVAPTScan = () => {
               ipInfo: {
                 ...ipInfo,
                 geolocation: {
-                  latitude: ipInfo?.latitude,
-                  longitude: ipInfo?.longitude,
-                  accuracy: ipInfo?.accuracy
+                  latitude: parseFloat(ipInfo?.loc?.split(',')[0]) || null,
+                  longitude: parseFloat(ipInfo?.loc?.split(',')[1]) || null,
+                  accuracy: null
                 },
                 network: {
-                  asn: ipInfo?.asn,
-                  provider: ipInfo?.isp,
-                  type: ipInfo?.type
+                  asn: (ipInfo?.org || '').split(' ')[0] || '',
+                  provider: (ipInfo?.org || '').split(' ').slice(1).join(' ') || '',
+                  type: 'Unknown'
                 }
               },
               whois: {
                 ...whois,
                 registrationDetails: {
-                  registrar: whois?.registrar,
-                  createdDate: whois?.createdDate,
-                  expiryDate: whois?.expiryDate,
-                  lastUpdated: whois?.updatedDate
+                  registrar: whois?.registrar || 'Unknown',
+                  createdDate: whois?.creation_date || 'Unknown',
+                  expiryDate: whois?.expiration_date || 'Unknown',
+                  lastUpdated: whois?.updated_date || 'Unknown'
                 },
                 contactInfo: {
-                  technical: whois?.technical,
-                  administrative: whois?.administrative
+                  technical: whois?.emails?.[0] || 'Not available',
+                  administrative: whois?.emails?.[1] || 'Not available'
                 }
               },
               dnsRecords: {
-                records: dnsRecords,
+                ...dnsRecords,
+                records: Object.entries(dnsRecords || {}),
                 analysisTimestamp: new Date().toISOString(),
-                recordTypes: ['A', 'MX', 'TXT', 'CNAME', 'NS'].map(type => ({
-                  type,
-                  records: dnsRecords?.filter((r: any) => r.type === type) || []
-                }))
+                recordTypes: recordTypes
               }
             };
+            
+            console.log("Reconnaissance results:", updatedStages[stageNumber - 1].results);
           } catch (error) {
             console.error("Error during reconnaissance:", error);
             toast.error("Error during reconnaissance phase, but continuing scan");
             updatedStages[stageNumber - 1].results = { 
               error: "Reconnaissance failed",
               errorDetails: error instanceof Error ? error.message : 'Unknown error',
-              timestamp: new Date().toISOString()
+              timestamp: new Date().toISOString(),
+              shodan: {
+                lastUpdate: new Date().toISOString(),
+                detectedServices: [],
+                vulnerabilities: []
+              },
+              ipInfo: {
+                geolocation: { latitude: null, longitude: null, accuracy: null },
+                network: { asn: 'Unknown', provider: 'Unknown', type: 'Unknown' }
+              },
+              whois: {
+                registrationDetails: {
+                  registrar: 'Unknown',
+                  createdDate: 'Unknown',
+                  expiryDate: 'Unknown'
+                },
+                contactInfo: {
+                  technical: 'Not available',
+                  administrative: 'Not available'
+                }
+              },
+              dnsRecords: {
+                records: [],
+                analysisTimestamp: new Date().toISOString(),
+                recordTypes: []
+              }
             };
           }
           break;
           
         case 3: // Scanning
           try {
-            const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 5) + 5);
+            const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 8) + 8);
             setVulnerabilities(scanVulnerabilities);
             
             updatedStages[stageNumber - 1].results = {
@@ -213,7 +247,12 @@ export const useVAPTScan = () => {
           } catch (error) {
             console.error("Error during scanning:", error);
             toast.error("Error during scanning phase, but continuing scan");
-            updatedStages[stageNumber - 1].results = { error: "Scanning failed" };
+            updatedStages[stageNumber - 1].results = { 
+              error: "Scanning failed",
+              openPorts: [],
+              services: [],
+              vulnerabilities: []
+            };
           }
           break;
           
@@ -325,7 +364,7 @@ export const useVAPTScan = () => {
       updatedStages[stageNumber - 1].completed = true;
       setStages(updatedStages);
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
       processStage(stageNumber + 1);
 
     } catch (error) {

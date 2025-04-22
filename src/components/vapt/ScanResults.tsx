@@ -81,29 +81,79 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
 
   const renderReconnaissanceTab = () => {
     const reconResults = stages[1]?.results as ReconnaissanceResults;
-    if (!reconResults) return null;
+    if (!reconResults || reconResults.error) {
+      return (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <h3 className="text-red-600 font-medium">Reconnaissance Error</h3>
+          <p>{reconResults?.errorDetails || "An error occurred during the reconnaissance phase"}</p>
+        </div>
+      );
+    }
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
+        {/* Shodan Info */}
+        <div className="bg-white border border-gray-200 rounded-md p-4">
+          <h3 className="text-lg font-medium mb-4">Shodan Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Host Information</h4>
+              <div className="mt-1 space-y-1">
+                <p>IP: {reconResults.shodan?.ip || "N/A"}</p>
+                <p>OS: {reconResults.shodan?.os || "Unknown"}</p>
+                <p>Hostnames: {reconResults.shodan?.hostnames?.join(", ") || "None detected"}</p>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Open Ports</h4>
+              <div className="mt-1">
+                <p>{reconResults.shodan?.ports?.join(", ") || "No ports detected"}</p>
+              </div>
+            </div>
+          </div>
+          
+          {reconResults.shodan?.services && reconResults.shodan.services.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-500 mb-2">Detected Services</h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Port</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {reconResults.shodan.services.map((service, idx) => (
+                      <tr key={idx}>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">{service.port}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">{service.service}</td>
+                        <td className="px-3 py-2 whitespace-nowrap text-sm">{service.version}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* IP Info */}
         <div className="bg-white border border-gray-200 rounded-md p-4">
           <h3 className="text-lg font-medium mb-4">Network Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <h4 className="text-sm font-medium text-gray-500">Geolocation</h4>
               <div className="mt-1 space-y-1">
+                <p>City: {reconResults.ipInfo?.city || "N/A"}</p>
+                <p>Region: {reconResults.ipInfo?.region || "N/A"}</p>
+                <p>Country: {reconResults.ipInfo?.country || "N/A"}</p>
                 <p>
-                  Latitude:{" "}
-                  {reconResults.ipInfo?.geolocation?.latitude?.toString() || "N/A"}
-                </p>
-                <p>
-                  Longitude:{" "}
-                  {reconResults.ipInfo?.geolocation?.longitude?.toString() || "N/A"}
-                </p>
-                <p>
-                  Accuracy:{" "}
-                  {reconResults.ipInfo?.geolocation?.accuracy
-                    ? `${reconResults.ipInfo.geolocation.accuracy}m`
-                    : "N/A"}
+                  Coordinates: {reconResults.ipInfo?.geolocation?.latitude !== null && 
+                  reconResults.ipInfo?.geolocation?.longitude !== null ? 
+                  `${reconResults.ipInfo.geolocation.latitude}, ${reconResults.ipInfo.geolocation.longitude}` : 
+                  "N/A"}
                 </p>
               </div>
             </div>
@@ -117,32 +167,66 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
                   Provider: {reconResults.ipInfo?.network?.provider || "N/A"}
                 </p>
                 <p>Type: {reconResults.ipInfo?.network?.type || "N/A"}</p>
+                <p>Hostname: {reconResults.ipInfo?.hostname || "N/A"}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {reconResults.dnsRecords && (
+        {/* WHOIS Information */}
+        <div className="bg-white border border-gray-200 rounded-md p-4">
+          <h3 className="text-lg font-medium mb-4">WHOIS Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Registration</h4>
+              <div className="mt-1 space-y-1">
+                <p>Domain: {reconResults.whois?.domain_name || scanResults.target}</p>
+                <p>Registrar: {reconResults.whois?.registrationDetails?.registrar || "N/A"}</p>
+                <p>Created: {reconResults.whois?.registrationDetails?.createdDate || "N/A"}</p>
+                <p>Expires: {reconResults.whois?.registrationDetails?.expiryDate || "N/A"}</p>
+                <p>Last Updated: {reconResults.whois?.registrationDetails?.lastUpdated || "N/A"}</p>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-gray-500">Contact Information</h4>
+              <div className="mt-1 space-y-1">
+                <p>Technical: {reconResults.whois?.contactInfo?.technical || "N/A"}</p>
+                <p>Administrative: {reconResults.whois?.contactInfo?.administrative || "N/A"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* DNS Records */}
+        {reconResults.dnsRecords?.recordTypes && (
           <div className="bg-white border border-gray-200 rounded-md p-4">
             <h3 className="text-lg font-medium mb-4">DNS Records</h3>
             <div className="space-y-4">
-              {reconResults.dnsRecords.recordTypes.map((recordType) => (
-                <div
-                  key={recordType.type}
-                  className="border-t pt-4 first:border-t-0 first:pt-0"
-                >
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">
-                    {recordType.type} Records
-                  </h4>
-                  <div className="space-y-2">
-                    {recordType.records.map((record, index) => (
-                      <div key={index} className="text-sm">
-                        {JSON.stringify(record)}
-                      </div>
-                    ))}
+              {reconResults.dnsRecords.recordTypes.length > 0 ? (
+                reconResults.dnsRecords.recordTypes.map((recordType) => (
+                  <div
+                    key={recordType.type}
+                    className="border-t pt-4 first:border-t-0 first:pt-0"
+                  >
+                    <h4 className="text-sm font-medium text-gray-500 mb-2">
+                      {recordType.type} Records
+                    </h4>
+                    <div className="space-y-1">
+                      {recordType.records.length > 0 ? (
+                        recordType.records.map((record, index) => (
+                          <div key={index} className="text-sm bg-gray-50 p-2 rounded">
+                            {typeof record === 'object' ? JSON.stringify(record) : record}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500">No records found</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-gray-500">No DNS records found</p>
+              )}
             </div>
           </div>
         )}
@@ -216,6 +300,14 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
                   <span className="text-xs ml-1">{vuln.cvssScore}</span>
                 </div>
               )}
+              {vuln.remediation && (
+                <div className="mt-3 bg-white border border-gray-200 rounded p-2">
+                  <span className="text-xs font-medium text-gray-500 block mb-1">
+                    Remediation:
+                  </span>
+                  <span className="text-xs">{vuln.remediation}</span>
+                </div>
+              )}
             </div>
           </div>
         ))
@@ -225,67 +317,71 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
     </div>
   );
 
-  const renderRemediationTab = () => (
-    <div className="space-y-4">
-      {stages[8]?.results?.remediationItems?.length > 0 ? (
-        stages[8].results.remediationItems.map((item: any, index: number) => (
-          <div
-            key={index}
-            className={`border rounded-md overflow-hidden ${
-              item.priority === "Immediate"
-                ? "border-red-300"
-                : item.priority === "High"
-                ? "border-orange-300"
-                : item.priority === "Medium"
-                ? "border-yellow-300"
-                : "border-blue-300"
-            }`}
-          >
+  const renderRemediationTab = () => {
+    const remediationItems = stages[8]?.results?.remediationItems || [];
+    
+    return (
+      <div className="space-y-4">
+        {remediationItems.length > 0 ? (
+          remediationItems.map((item: any, index: number) => (
             <div
-              className={`px-4 py-2 flex items-center justify-between ${
+              key={index}
+              className={`border rounded-md overflow-hidden ${
                 item.priority === "Immediate"
-                  ? "bg-red-100"
+                  ? "border-red-300"
                   : item.priority === "High"
-                  ? "bg-orange-100"
+                  ? "border-orange-300"
                   : item.priority === "Medium"
-                  ? "bg-yellow-100"
-                  : "bg-blue-100"
+                  ? "border-yellow-300"
+                  : "border-blue-300"
               }`}
             >
-              <h5 className="font-medium">{item.vulnerability.name}</h5>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-xs font-medium px-2 py-1 rounded-full ${
-                    item.priority === "Immediate"
-                      ? "bg-red-200 text-red-800"
-                      : item.priority === "High"
-                      ? "bg-orange-200 text-orange-800"
-                      : item.priority === "Medium"
-                      ? "bg-yellow-200 text-yellow-800"
-                      : "bg-blue-200 text-blue-800"
-                  }`}
-                >
-                  {item.priority}
-                </span>
-                <span className="text-xs font-medium px-2 py-1 bg-gray-200 rounded-full">
-                  {item.timeEstimate}
-                </span>
+              <div
+                className={`px-4 py-2 flex items-center justify-between ${
+                  item.priority === "Immediate"
+                    ? "bg-red-100"
+                    : item.priority === "High"
+                    ? "bg-orange-100"
+                    : item.priority === "Medium"
+                    ? "bg-yellow-100"
+                    : "bg-blue-100"
+                }`}
+              >
+                <h5 className="font-medium">{item.vulnerability.name}</h5>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-xs font-medium px-2 py-1 rounded-full ${
+                      item.priority === "Immediate"
+                        ? "bg-red-200 text-red-800"
+                        : item.priority === "High"
+                        ? "bg-orange-200 text-orange-800"
+                        : item.priority === "Medium"
+                        ? "bg-yellow-200 text-yellow-800"
+                        : "bg-blue-200 text-blue-800"
+                    }`}
+                  >
+                    {item.priority}
+                  </span>
+                  <span className="text-xs font-medium px-2 py-1 bg-gray-200 rounded-full">
+                    {item.timeEstimate}
+                  </span>
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-sm mb-3">{item.vulnerability.description}</p>
+                <div className="bg-white border border-gray-200 rounded-md p-3">
+                  <h6 className="text-sm font-medium mb-1">Suggested Fix:</h6>
+                  <p className="text-sm">{item.suggestedFix}</p>
+                </div>
               </div>
             </div>
-            <div className="p-4">
-              <p className="text-sm mb-3">{item.vulnerability.description}</p>
-              <div className="bg-white border border-gray-200 rounded-md p-3">
-                <h6 className="text-sm font-medium mb-1">Suggested Fix:</h6>
-                <p className="text-sm">{item.suggestedFix}</p>
-              </div>
-            </div>
-          </div>
-        ))
-      ) : (
-        <p className="text-gray-500">No remediation items were identified</p>
-      )}
-    </div>
-  );
+          ))
+        ) : (
+          <p className="text-gray-500">No remediation items were identified</p>
+        )}
+      </div>
+    );
+  };
 
   const renderTimelineTab = () => (
     <div className="space-y-4">

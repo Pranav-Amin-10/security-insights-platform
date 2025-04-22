@@ -18,6 +18,14 @@ export type ReconnaissanceResults = {
     vulnerabilities: string[];
     ports?: number[];
     vulns?: string[];
+    ip?: string;
+    hostnames?: string[];
+    os?: string;
+    services?: Array<{
+      port: number;
+      service: string;
+      version: string;
+    }>;
   };
   ipInfo: {
     geolocation: {
@@ -30,17 +38,23 @@ export type ReconnaissanceResults = {
       provider: string;
       type: string;
     };
+    city?: string;
+    region?: string;
+    country?: string;
+    hostname?: string;
   };
   whois: {
     registrationDetails: {
       registrar: string;
       createdDate: string;
       expiryDate: string;
+      lastUpdated?: string;
     };
     contactInfo: {
       technical: string;
       administrative: string;
     };
+    domain_name?: string;
   };
   dnsRecords: {
     records: any[];
@@ -49,6 +63,20 @@ export type ReconnaissanceResults = {
       type: string;
       records: any[];
     }>;
+    A?: string[];
+    AAAA?: string[];
+    MX?: Array<{ preference: number; exchange: string }>;
+    NS?: string[];
+    TXT?: string[];
+    CNAME?: string[];
+    SOA?: {
+      mname: string;
+      rname: string;
+      serial: number;
+      refresh: number;
+      retry: number;
+      expire: number;
+      minimum: number;
+    };
   };
 };
-
