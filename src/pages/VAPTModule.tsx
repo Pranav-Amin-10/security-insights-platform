@@ -79,7 +79,7 @@ const VAPTModule = () => {
                 </span>
               </p>
               <p className="text-gray-500 text-sm mt-2">
-                Stage {activeStage} of 9 complete ({progress}%)
+                Stage {activeStage} of {stages.length} complete ({progress}%)
               </p>
             </div>
           )}
@@ -99,9 +99,9 @@ const VAPTModule = () => {
             </div>
           )}
 
-          {scanComplete && showResults && (
+          {scanComplete && showResults && scanResults && (
             <ScanResults
-              scanResults={scanResults!}
+              scanResults={scanResults}
               vulnerabilities={vulnerabilities}
               stages={stages}
               testingMethod={formValues.testingMethod}
