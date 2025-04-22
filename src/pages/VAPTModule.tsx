@@ -29,8 +29,7 @@ const VAPTModule = () => {
 
   const [formValues, setFormValues] = useState<VAPTFormValues>({
     targetSystem: "",
-    scopeDetails: "",
-    testingMethod: "black-box"
+    scopeDetails: ""
   });
 
   const handleFormChange = (values: Partial<VAPTFormValues>) => {
@@ -79,7 +78,7 @@ const VAPTModule = () => {
                 </span>
               </p>
               <p className="text-gray-500 text-sm mt-2">
-                Stage {activeStage - 1} of 10 complete ({progress}%)
+                Stage {activeStage - 1} of 9 complete ({progress}%)
               </p>
             </div>
           )}
@@ -104,7 +103,6 @@ const VAPTModule = () => {
               scanResults={scanResults!}
               vulnerabilities={vulnerabilities}
               stages={stages}
-              testingMethod={formValues.testingMethod}
               onDownloadReport={downloadReport}
               onResetScan={resetScan}
             />

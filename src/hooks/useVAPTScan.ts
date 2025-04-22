@@ -373,8 +373,7 @@ export const useVAPTScan = () => {
 
   const [formValues, setFormValues] = useState<VAPTFormValues>({
     targetSystem: "",
-    scopeDetails: "",
-    testingMethod: "black-box"
+    scopeDetails: ""
   });
 
   const startAutomatedScan = (formValues: VAPTFormValues) => {

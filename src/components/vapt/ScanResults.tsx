@@ -13,7 +13,6 @@ interface ScanResultsProps {
   scanResults: VAPTScanResults;
   vulnerabilities: Vulnerability[];
   stages: VAPTStage[];
-  testingMethod: string;
   onDownloadReport: () => void;
   onResetScan: () => void;
 }
@@ -22,7 +21,6 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
   scanResults,
   vulnerabilities,
   stages,
-  testingMethod,
   onDownloadReport,
   onResetScan,
 }) => {
@@ -48,10 +46,6 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
               Total Vulnerabilities
             </p>
             <p>{vulnerabilities.length}</p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-500">Testing Method</p>
-            <p className="capitalize">{testingMethod}</p>
           </div>
         </div>
       </div>
