@@ -117,7 +117,7 @@ export const useVAPTScan = () => {
       await new Promise(resolve => setTimeout(resolve, 5000));
 
       switch (stageNumber) {
-        case 1: // Reconnaissance (was previously 2)
+        case 1: // Reconnaissance
           try {
             const shodanResults = await shodanReconnaissance(formValues.targetSystem);
             const ipInfo = await getIPInfo(formValues.targetSystem);
@@ -226,7 +226,7 @@ export const useVAPTScan = () => {
           }
           break;
           
-        case 2: // Scanning (was previously 3)
+        case 2: // Scanning
           try {
             // Generate between 8-15 vulnerabilities for better testing
             const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 8) + 8);
@@ -253,7 +253,7 @@ export const useVAPTScan = () => {
           }
           break;
           
-        case 3: // Vulnerability Analysis (was previously 4)
+        case 3: // Vulnerability Analysis
           updatedStages[stageNumber - 1].results = {
             criticalVulns: vulnerabilities.filter(v => v.severity === 'Critical'),
             highVulns: vulnerabilities.filter(v => v.severity === 'High'),
@@ -263,7 +263,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 4: // Exploitation (was previously 5)
+        case 4: // Exploitation
           const exploitableVulns = vulnerabilities.filter(v => 
             v.severity === 'Critical' || v.severity === 'High'
           );
@@ -277,7 +277,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 5: // Post Exploitation (was previously 6)
+        case 5: // Post Exploitation
           updatedStages[stageNumber - 1].results = {
             accessMaintained: Math.random() > 0.5,
             dataAccessed: ['Configuration files', 'User credentials', 'Database connection strings'],
@@ -285,7 +285,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 6: // Analysis (was previously 7)
+        case 6: // Analysis
           updatedStages[stageNumber - 1].results = {
             riskAssessment: {
               businessImpact: 'High',
@@ -297,7 +297,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 7: // Reporting (was previously 8)
+        case 7: // Reporting
           // Create summary counts from actual vulnerabilities
           const criticalCount = vulnerabilities.filter(v => v.severity === 'Critical').length;
           const highCount = vulnerabilities.filter(v => v.severity === 'High').length;
@@ -327,23 +327,25 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 8: // Remediation Planning (was previously 9)
+        case 8: // Remediation Planning
           // Create remediation items based on actual vulnerabilities
+          const remediationItems = vulnerabilities.map(v => ({
+            vulnerability: v,
+            priority: v.severity === 'Critical' ? 'Immediate' : 
+                      v.severity === 'High' ? 'High' :
+                      v.severity === 'Medium' ? 'Medium' : 'Low',
+            suggestedFix: v.remediation || `Update and patch the affected component to address ${v.name}.`,
+            timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
+                          v.severity === 'High' ? '1 week' :
+                          v.severity === 'Medium' ? '2 weeks' : '1 month'
+          }));
+          
           updatedStages[stageNumber - 1].results = {
-            remediationItems: vulnerabilities.map(v => ({
-              vulnerability: v,
-              priority: v.severity === 'Critical' ? 'Immediate' : 
-                        v.severity === 'High' ? 'High' :
-                        v.severity === 'Medium' ? 'Medium' : 'Low',
-              suggestedFix: v.remediation || `Update and patch the affected component to address ${v.name}.`,
-              timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
-                            v.severity === 'High' ? '1 week' :
-                            v.severity === 'Medium' ? '2 weeks' : '1 month'
-            }))
+            remediationItems: remediationItems
           };
           break;
           
-        case 9: // Remediation Verification (was previously 10)
+        case 9: // Remediation Verification
           updatedStages[stageNumber - 1].results = {
             verificationResults: vulnerabilities.map(v => ({
               vulnerability: v,

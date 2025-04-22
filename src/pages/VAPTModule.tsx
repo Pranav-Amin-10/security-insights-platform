@@ -98,9 +98,9 @@ const VAPTModule = () => {
             </div>
           )}
 
-          {scanComplete && showResults && (
+          {scanComplete && showResults && scanResults && (
             <ScanResults
-              scanResults={scanResults!}
+              scanResults={scanResults}
               vulnerabilities={vulnerabilities}
               stages={stages}
               onDownloadReport={downloadReport}

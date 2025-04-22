@@ -313,11 +313,12 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
   );
 
   const renderRemediationTab = () => {
+    // Make sure we're using the correct stage (8) and accessing remediationItems
     const remediationItems = stages[7]?.results?.remediationItems || [];
     
     return (
       <div className="space-y-4">
-        {remediationItems.length > 0 ? (
+        {remediationItems && remediationItems.length > 0 ? (
           remediationItems.map((item: any, index: number) => (
             <div
               key={index}
@@ -435,31 +436,31 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
         {[
           {
             label: "Critical",
-            count: scanResults?.summary.criticalCount || 0,
+            count: scanResults?.summary?.criticalCount || 0,
             bg: "bg-red-100",
             text: "text-red-800",
           },
           {
             label: "High",
-            count: scanResults?.summary.highCount || 0,
+            count: scanResults?.summary?.highCount || 0,
             bg: "bg-orange-100",
             text: "text-orange-800",
           },
           {
             label: "Medium",
-            count: scanResults?.summary.mediumCount || 0,
+            count: scanResults?.summary?.mediumCount || 0,
             bg: "bg-yellow-100",
             text: "text-yellow-800",
           },
           {
             label: "Low",
-            count: scanResults?.summary.lowCount || 0,
+            count: scanResults?.summary?.lowCount || 0,
             bg: "bg-blue-100",
             text: "text-blue-800",
           },
           {
             label: "Info",
-            count: scanResults?.summary.infoCount || 0,
+            count: scanResults?.summary?.infoCount || 0,
             bg: "bg-gray-100",
             text: "text-gray-800",
           },
