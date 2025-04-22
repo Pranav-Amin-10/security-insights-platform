@@ -16,7 +16,7 @@ export type ReconnaissanceResults = {
   errorDetails?: string;
   shodan: {
     lastUpdate: string;
-    detectedServices: string[];
+    detectedServices: string[] | number[];
     vulnerabilities: string[];
     ports?: number[];
     vulns?: string[];

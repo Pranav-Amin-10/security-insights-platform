@@ -158,7 +158,8 @@ export const useVAPTScan = () => {
                 ...shodanResults,
                 lastUpdate: new Date().toISOString(),
                 detectedServices: shodanResults?.ports || [],
-                vulnerabilities: shodanResults?.vulns || []
+                vulnerabilities: shodanResults?.vulns || [],
+                ip: shodanResults?.ip || formValues.targetSystem
               },
               ipInfo: {
                 ...ipInfo,
@@ -205,7 +206,8 @@ export const useVAPTScan = () => {
               shodan: {
                 lastUpdate: new Date().toISOString(),
                 detectedServices: [],
-                vulnerabilities: []
+                vulnerabilities: [],
+                ip: formValues.targetSystem
               },
               ipInfo: {
                 geolocation: { latitude: null, longitude: null, accuracy: null },

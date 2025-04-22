@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Tabs,
@@ -323,7 +322,7 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
     
     return (
       <div className="space-y-4">
-        {remediationItems.length > 0 ? (
+        {remediationItems && remediationItems.length > 0 ? (
           remediationItems.map((item: any, index: number) => (
             <div
               key={index}
