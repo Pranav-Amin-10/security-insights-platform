@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
 import { VAPTFormValues } from "@/types/vapt";
@@ -90,7 +91,7 @@ export const useVAPTScan = () => {
   const [scanError, setScanError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
 
-  const processStage = async (stageNumber: number) => {
+  const processStage = async (stageNumber: number, formValues: VAPTFormValues) => {
     if (stageNumber > initialStages.length) {
       setScanComplete(true);
       setIsAutomating(false);
@@ -102,7 +103,8 @@ export const useVAPTScan = () => {
     }
 
     setActiveStage(stageNumber);
-    setProgress(Math.min(100, Math.floor((stageNumber - 1) * (100 / initialStages.length))));
+    const totalStages = initialStages.length;
+    setProgress(Math.min(100, Math.floor((stageNumber - 1) * (100 / totalStages))));
 
     try {
       const updatedStages = [...stages];
@@ -360,7 +362,7 @@ export const useVAPTScan = () => {
       setStages(updatedStages);
 
       await new Promise(resolve => setTimeout(resolve, 3000));
-      processStage(stageNumber + 1);
+      processStage(stageNumber + 1, formValues);
 
     } catch (error) {
       console.error(`Error processing stage ${stageNumber}:`, error);
@@ -394,7 +396,7 @@ export const useVAPTScan = () => {
     setActiveStage(1);
     setFormValues(formValues);
 
-    processStage(1);
+    processStage(1, formValues);
   };
 
   const resetScan = () => {

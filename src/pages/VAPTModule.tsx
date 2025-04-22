@@ -74,11 +74,13 @@ const VAPTModule = () => {
               <p className="text-gray-600">
                 Currently processing:{" "}
                 <span className="font-medium">
-                  {stages[activeStage - 1]?.name || "Completing scan"}
+                  {stages && activeStage > 0 && activeStage <= stages.length 
+                    ? stages[activeStage - 1]?.name || "Completing scan"
+                    : "Initializing scan"}
                 </span>
               </p>
               <p className="text-gray-500 text-sm mt-2">
-                Stage {activeStage - 1} of 9 complete ({progress}%)
+                Stage {Math.max(0, activeStage - 1)} of 9 complete ({progress}%)
               </p>
             </div>
           )}
@@ -98,9 +100,9 @@ const VAPTModule = () => {
             </div>
           )}
 
-          {scanComplete && showResults && (
+          {scanComplete && showResults && scanResults && (
             <ScanResults
-              scanResults={scanResults!}
+              scanResults={scanResults}
               vulnerabilities={vulnerabilities}
               stages={stages}
               onDownloadReport={downloadReport}
