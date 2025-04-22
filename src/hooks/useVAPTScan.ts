@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
 import { VAPTFormValues } from "@/types/vapt";
@@ -16,69 +15,62 @@ import { generateVAPTReport } from "@/lib/pdf-utils";
 const initialStages: VAPTStage[] = [
   {
     id: 1,
-    name: "Planning",
-    description: "Define objectives, scope, and target systems",
-    completed: false,
-    results: null
-  },
-  {
-    id: 2,
     name: "Reconnaissance",
     description: "Gather information about the target",
     completed: false,
     results: null
   },
   {
-    id: 3,
+    id: 2,
     name: "Scanning",
     description: "Identify vulnerabilities and open ports",
     completed: false,
     results: null
   },
   {
-    id: 4,
+    id: 3,
     name: "Vulnerability Analysis",
     description: "Analyze and categorize discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 5,
+    id: 4,
     name: "Exploitation",
     description: "Attempt to exploit discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 6,
+    id: 5,
     name: "Post Exploitation",
     description: "Maintain access and explore the system",
     completed: false,
     results: null
   },
   {
-    id: 7,
+    id: 6,
     name: "Analysis",
     description: "Analyze findings and determine impact",
     completed: false,
     results: null
   },
   {
-    id: 8,
+    id: 7,
     name: "Reporting",
     description: "Document findings and recommendations",
     completed: false,
     results: null
   },
   {
-    id: 9,
+    id: 8,
     name: "Remediation Planning",
     description: "Plan for addressing discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 10,
+    id: 9,
     name: "Remediation Verification",
     description: "Verify that remediation efforts were successful",
     completed: false,
@@ -99,7 +91,7 @@ export const useVAPTScan = () => {
   const [progress, setProgress] = useState<number>(0);
 
   const processStage = async (stageNumber: number) => {
-    if (stageNumber > stages.length) {
+    if (stageNumber > initialStages.length) {
       setScanComplete(true);
       setIsAutomating(false);
       setShowResults(true);
@@ -110,7 +102,7 @@ export const useVAPTScan = () => {
     }
 
     setActiveStage(stageNumber);
-    setProgress(Math.min(100, Math.floor((stageNumber - 1) * 10)));
+    setProgress(Math.min(100, Math.floor((stageNumber - 1) * (100 / initialStages.length))));
 
     try {
       const updatedStages = [...stages];
@@ -118,25 +110,7 @@ export const useVAPTScan = () => {
       await new Promise(resolve => setTimeout(resolve, 5000));
 
       switch (stageNumber) {
-        case 1: // Planning
-          updatedStages[stageNumber - 1].results = {
-            target: formValues.targetSystem,
-            scope: formValues.scopeDetails,
-            method: formValues.testingMethod,
-            timestamp: new Date().toISOString(),
-            details: {
-              targetType: formValues.targetSystem.includes('.') ? 'Domain' : 'IP Address',
-              assessmentScope: formValues.scopeDetails || 'Full system assessment',
-              methodology: formValues.testingMethod === 'black-box' ? 
-                'No prior knowledge of the system' : 
-                formValues.testingMethod === 'white-box' ? 
-                'Complete system knowledge and access' : 
-                'Limited system knowledge'
-            }
-          };
-          break;
-          
-        case 2: // Reconnaissance
+        case 1: // Reconnaissance
           try {
             const shodanResults = await shodanReconnaissance(formValues.targetSystem);
             const ipInfo = await getIPInfo(formValues.targetSystem);
@@ -233,9 +207,8 @@ export const useVAPTScan = () => {
           }
           break;
           
-        case 3: // Scanning
+        case 2: // Scanning
           try {
-            // Generate between 8-15 vulnerabilities for better testing
             const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 8) + 8);
             setVulnerabilities(scanVulnerabilities);
             
@@ -260,7 +233,7 @@ export const useVAPTScan = () => {
           }
           break;
           
-        case 4: // Vulnerability Analysis
+        case 3: // Vulnerability Analysis
           updatedStages[stageNumber - 1].results = {
             criticalVulns: vulnerabilities.filter(v => v.severity === 'Critical'),
             highVulns: vulnerabilities.filter(v => v.severity === 'High'),
@@ -270,7 +243,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 5: // Exploitation
+        case 4: // Exploitation
           const exploitableVulns = vulnerabilities.filter(v => 
             v.severity === 'Critical' || v.severity === 'High'
           );
@@ -284,7 +257,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 6: // Post Exploitation
+        case 5: // Post Exploitation
           updatedStages[stageNumber - 1].results = {
             accessMaintained: Math.random() > 0.5,
             dataAccessed: ['Configuration files', 'User credentials', 'Database connection strings'],
@@ -292,7 +265,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 7: // Analysis
+        case 6: // Analysis
           updatedStages[stageNumber - 1].results = {
             riskAssessment: {
               businessImpact: 'High',
@@ -304,8 +277,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 8: // Reporting
-          // Create summary counts from actual vulnerabilities
+        case 7: // Reporting
           const criticalCount = vulnerabilities.filter(v => v.severity === 'Critical').length;
           const highCount = vulnerabilities.filter(v => v.severity === 'High').length;
           const mediumCount = vulnerabilities.filter(v => v.severity === 'Medium').length;
@@ -334,8 +306,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 9: // Remediation Planning
-          // Create remediation items based on actual vulnerabilities
+        case 8: // Remediation Planning
           updatedStages[stageNumber - 1].results = {
             remediationItems: vulnerabilities.map(v => ({
               vulnerability: v,
@@ -350,7 +321,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 10: // Remediation Verification
+        case 9: // Remediation Verification
           updatedStages[stageNumber - 1].results = {
             verificationResults: vulnerabilities.map(v => ({
               vulnerability: v,
@@ -359,7 +330,6 @@ export const useVAPTScan = () => {
             }))
           };
           
-          // Create final scan results with updated summary counts
           const finalResultsObj: VAPTScanResults = {
             id: scanResults?.id || `scan-${Date.now()}`,
             timestamp: scanResults?.timestamp || new Date().toISOString(),
