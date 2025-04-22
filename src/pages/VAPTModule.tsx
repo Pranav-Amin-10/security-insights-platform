@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
@@ -109,7 +108,6 @@ const VAPTModule = () => {
   const [scanError, setScanError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
   
-  // Process each stage in sequence
   const processStage = async (stageNumber: number) => {
     if (stageNumber > stages.length) {
       setScanComplete(true);
@@ -127,13 +125,24 @@ const VAPTModule = () => {
     try {
       const updatedStages = [...stages];
       
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       switch (stageNumber) {
         case 1: // Planning
           updatedStages[stageNumber - 1].results = {
             target: targetSystem,
             scope: scopeDetails,
             method: testingMethod,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            details: {
+              targetType: targetSystem.includes('.') ? 'Domain' : 'IP Address',
+              assessmentScope: scopeDetails || 'Full system assessment',
+              methodology: testingMethod === 'black-box' ? 
+                'No prior knowledge of the system' : 
+                testingMethod === 'white-box' ? 
+                'Complete system knowledge and access' : 
+                'Limited system knowledge'
+            }
           };
           break;
           
@@ -145,15 +154,55 @@ const VAPTModule = () => {
             const dnsRecords = await getDNSRecords(targetSystem);
             
             updatedStages[stageNumber - 1].results = {
-              shodan: shodanResults,
-              ipInfo,
-              whois,
-              dnsRecords
+              shodan: {
+                ...shodanResults,
+                lastUpdate: new Date().toISOString(),
+                detectedServices: shodanResults?.ports || [],
+                vulnerabilities: shodanResults?.vulns || []
+              },
+              ipInfo: {
+                ...ipInfo,
+                geolocation: {
+                  latitude: ipInfo?.latitude,
+                  longitude: ipInfo?.longitude,
+                  accuracy: ipInfo?.accuracy
+                },
+                network: {
+                  asn: ipInfo?.asn,
+                  provider: ipInfo?.isp,
+                  type: ipInfo?.type
+                }
+              },
+              whois: {
+                ...whois,
+                registrationDetails: {
+                  registrar: whois?.registrar,
+                  createdDate: whois?.createdDate,
+                  expiryDate: whois?.expiryDate,
+                  lastUpdated: whois?.updatedDate
+                },
+                contactInfo: {
+                  technical: whois?.technical,
+                  administrative: whois?.administrative
+                }
+              },
+              dnsRecords: {
+                records: dnsRecords,
+                analysisTimestamp: new Date().toISOString(),
+                recordTypes: ['A', 'MX', 'TXT', 'CNAME', 'NS'].map(type => ({
+                  type,
+                  records: dnsRecords?.filter((r: any) => r.type === type) || []
+                }))
+              }
             };
           } catch (error) {
             console.error("Error during reconnaissance:", error);
             toast.error("Error during reconnaissance phase, but continuing scan");
-            updatedStages[stageNumber - 1].results = { error: "Reconnaissance failed" };
+            updatedStages[stageNumber - 1].results = { 
+              error: "Reconnaissance failed",
+              errorDetails: error instanceof Error ? error.message : 'Unknown error',
+              timestamp: new Date().toISOString()
+            };
           }
           break;
           
@@ -269,7 +318,6 @@ const VAPTModule = () => {
             }))
           };
           
-          // Save final results to database/storage
           if (scanResults) {
             try {
               await saveVAPTResults({
@@ -287,8 +335,7 @@ const VAPTModule = () => {
       updatedStages[stageNumber - 1].completed = true;
       setStages(updatedStages);
       
-      // Process next stage after a brief delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       processStage(stageNumber + 1);
       
     } catch (error) {
@@ -314,11 +361,9 @@ const VAPTModule = () => {
     setScanComplete(false);
     setLoading(true);
     
-    // Reset stages
     setStages(initialStages);
     setActiveStage(1);
     
-    // Start the automated process
     processStage(1);
   };
   
@@ -456,7 +501,6 @@ const VAPTModule = () => {
             </div>
           )}
           
-          {/* Show loading indicator during automated scanning */}
           {!scanComplete && isAutomating && !scanError && (
             <div className="text-center py-10">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-4"></div>
@@ -468,7 +512,6 @@ const VAPTModule = () => {
             </div>
           )}
           
-          {/* Show error message if the scan fails */}
           {scanError && (
             <div className="text-center py-10">
               <div className="inline-block rounded-full h-12 w-12 bg-red-100 flex items-center justify-center mb-4">
@@ -485,7 +528,6 @@ const VAPTModule = () => {
             </div>
           )}
           
-          {/* Show the final results once the scan is complete */}
           {scanComplete && (
             <div className="space-y-6">
               <div className="text-center mb-8">
@@ -535,11 +577,13 @@ const VAPTModule = () => {
                 </div>
               </div>
               
-              <Tabs defaultValue="summary">
+              <Tabs defaultValue="summary" className="w-full">
                 <TabsList className="mb-4">
                   <TabsTrigger value="summary">Summary</TabsTrigger>
+                  <TabsTrigger value="reconnaissance">Reconnaissance</TabsTrigger>
                   <TabsTrigger value="vulnerabilities">Vulnerabilities</TabsTrigger>
                   <TabsTrigger value="remediation">Remediation</TabsTrigger>
+                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="summary">
@@ -590,6 +634,79 @@ const VAPTModule = () => {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="reconnaissance">
+                  <div className="space-y-4">
+                    <div className="bg-white border border-gray-200 rounded-md p-4">
+                      <h3 className="text-lg font-medium mb-4">Network Information</h3>
+                      {stages[1].results?.ipInfo && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">Geolocation</h4>
+                            <div className="mt-1 space-y-1">
+                              <p>Latitude: {stages[1].results.ipInfo.geolocation.latitude}</p>
+                              <p>Longitude: {stages[1].results.ipInfo.geolocation.longitude}</p>
+                              <p>Accuracy: {stages[1].results.ipInfo.geolocation.accuracy}m</p>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">Network Details</h4>
+                            <div className="mt-1 space-y-1">
+                              <p>ASN: {stages[1].results.ipInfo.network.asn}</p>
+                              <p>Provider: {stages[1].results.ipInfo.network.provider}</p>
+                              <p>Type: {stages[1].results.ipInfo.network.type}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="bg-white border border-gray-200 rounded-md p-4">
+                      <h3 className="text-lg font-medium mb-4">DNS Records</h3>
+                      {stages[1].results?.dnsRecords && (
+                        <div className="space-y-4">
+                          {stages[1].results.dnsRecords.recordTypes.map((recordType: any) => (
+                            <div key={recordType.type} className="border-t pt-4 first:border-t-0 first:pt-0">
+                              <h4 className="text-sm font-medium text-gray-500 mb-2">
+                                {recordType.type} Records
+                              </h4>
+                              <div className="space-y-2">
+                                {recordType.records.map((record: any, index: number) => (
+                                  <div key={index} className="text-sm">
+                                    {JSON.stringify(record)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="bg-white border border-gray-200 rounded-md p-4">
+                      <h3 className="text-lg font-medium mb-4">WHOIS Information</h3>
+                      {stages[1].results?.whois && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">Registration Details</h4>
+                            <div className="mt-1 space-y-1">
+                              <p>Registrar: {stages[1].results.whois.registrationDetails.registrar}</p>
+                              <p>Created: {new Date(stages[1].results.whois.registrationDetails.createdDate).toLocaleDateString()}</p>
+                              <p>Expires: {new Date(stages[1].results.whois.registrationDetails.expiryDate).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500">Contact Information</h4>
+                            <div className="mt-1 space-y-1">
+                              <p>Technical: {stages[1].results.whois.contactInfo.technical || 'Redacted'}</p>
+                              <p>Administrative: {stages[1].results.whois.contactInfo.administrative || 'Redacted'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </TabsContent>
@@ -695,6 +812,42 @@ const VAPTModule = () => {
                     ) : (
                       <p className="text-gray-500">No remediation items were identified</p>
                     )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="timeline">
+                  <div className="space-y-4">
+                    {stages.map((stage) => (
+                      <div 
+                        key={stage.id} 
+                        className={`border rounded-md p-4 ${
+                          stage.completed ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium">{stage.name}</h3>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            stage.completed ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800'
+                          }`}>
+                            {stage.completed ? 'Completed' : 'Pending'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">{stage.description}</p>
+                        {stage.results && !stage.results.error && (
+                          <div className="text-sm">
+                            <strong>Results:</strong>
+                            <pre className="mt-1 bg-gray-100 p-2 rounded overflow-x-auto">
+                              {JSON.stringify(stage.results, null, 2)}
+                            </pre>
+                          </div>
+                        )}
+                        {stage.results?.error && (
+                          <div className="text-sm text-red-600">
+                            Error: {stage.results.errorDetails || stage.results.error}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </TabsContent>
               </Tabs>
