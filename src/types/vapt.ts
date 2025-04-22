@@ -4,6 +4,7 @@ import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
 export type VAPTFormValues = {
   targetSystem: string;
   scopeDetails: string;
+  testingMethod: "black-box" | "white-box" | "gray-box";
 };
 
 export type StageResults = {
@@ -15,7 +16,7 @@ export type ReconnaissanceResults = {
   errorDetails?: string;
   shodan: {
     lastUpdate: string;
-    detectedServices: string[] | number[];
+    detectedServices: string[];
     vulnerabilities: string[];
     ports?: number[];
     vulns?: string[];

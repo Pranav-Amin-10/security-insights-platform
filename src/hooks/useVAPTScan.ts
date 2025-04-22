@@ -16,62 +16,69 @@ import { generateVAPTReport } from "@/lib/pdf-utils";
 const initialStages: VAPTStage[] = [
   {
     id: 1,
+    name: "Planning",
+    description: "Define objectives, scope, and target systems",
+    completed: false,
+    results: null
+  },
+  {
+    id: 2,
     name: "Reconnaissance",
     description: "Gather information about the target",
     completed: false,
     results: null
   },
   {
-    id: 2,
+    id: 3,
     name: "Scanning",
     description: "Identify vulnerabilities and open ports",
     completed: false,
     results: null
   },
   {
-    id: 3,
+    id: 4,
     name: "Vulnerability Analysis",
     description: "Analyze and categorize discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 4,
+    id: 5,
     name: "Exploitation",
     description: "Attempt to exploit discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 5,
+    id: 6,
     name: "Post Exploitation",
     description: "Maintain access and explore the system",
     completed: false,
     results: null
   },
   {
-    id: 6,
+    id: 7,
     name: "Analysis",
     description: "Analyze findings and determine impact",
     completed: false,
     results: null
   },
   {
-    id: 7,
+    id: 8,
     name: "Reporting",
     description: "Document findings and recommendations",
     completed: false,
     results: null
   },
   {
-    id: 8,
+    id: 9,
     name: "Remediation Planning",
     description: "Plan for addressing discovered vulnerabilities",
     completed: false,
     results: null
   },
   {
-    id: 9,
+    id: 10,
     name: "Remediation Verification",
     description: "Verify that remediation efforts were successful",
     completed: false,
@@ -91,8 +98,8 @@ export const useVAPTScan = () => {
   const [scanError, setScanError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
 
-  const processStage = async (stageNumber: number, formValues: VAPTFormValues) => {
-    if (stageNumber > initialStages.length) {
+  const processStage = async (stageNumber: number) => {
+    if (stageNumber > stages.length) {
       setScanComplete(true);
       setIsAutomating(false);
       setShowResults(true);
@@ -103,8 +110,7 @@ export const useVAPTScan = () => {
     }
 
     setActiveStage(stageNumber);
-    const totalStages = initialStages.length;
-    setProgress(Math.min(100, Math.floor((stageNumber - 1) * (100 / totalStages))));
+    setProgress(Math.min(100, Math.floor((stageNumber - 1) * 10)));
 
     try {
       const updatedStages = [...stages];
@@ -112,7 +118,25 @@ export const useVAPTScan = () => {
       await new Promise(resolve => setTimeout(resolve, 5000));
 
       switch (stageNumber) {
-        case 1: // Reconnaissance
+        case 1: // Planning
+          updatedStages[stageNumber - 1].results = {
+            target: formValues.targetSystem,
+            scope: formValues.scopeDetails,
+            method: formValues.testingMethod,
+            timestamp: new Date().toISOString(),
+            details: {
+              targetType: formValues.targetSystem.includes('.') ? 'Domain' : 'IP Address',
+              assessmentScope: formValues.scopeDetails || 'Full system assessment',
+              methodology: formValues.testingMethod === 'black-box' ? 
+                'No prior knowledge of the system' : 
+                formValues.testingMethod === 'white-box' ? 
+                'Complete system knowledge and access' : 
+                'Limited system knowledge'
+            }
+          };
+          break;
+          
+        case 2: // Reconnaissance
           try {
             const shodanResults = await shodanReconnaissance(formValues.targetSystem);
             const ipInfo = await getIPInfo(formValues.targetSystem);
@@ -134,8 +158,7 @@ export const useVAPTScan = () => {
                 ...shodanResults,
                 lastUpdate: new Date().toISOString(),
                 detectedServices: shodanResults?.ports || [],
-                vulnerabilities: shodanResults?.vulns || [],
-                ip: shodanResults?.ip || formValues.targetSystem
+                vulnerabilities: shodanResults?.vulns || []
               },
               ipInfo: {
                 ...ipInfo,
@@ -182,8 +205,7 @@ export const useVAPTScan = () => {
               shodan: {
                 lastUpdate: new Date().toISOString(),
                 detectedServices: [],
-                vulnerabilities: [],
-                ip: formValues.targetSystem
+                vulnerabilities: []
               },
               ipInfo: {
                 geolocation: { latitude: null, longitude: null, accuracy: null },
@@ -209,8 +231,9 @@ export const useVAPTScan = () => {
           }
           break;
           
-        case 2: // Scanning
+        case 3: // Scanning
           try {
+            // Generate between 8-15 vulnerabilities for better testing
             const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 8) + 8);
             setVulnerabilities(scanVulnerabilities);
             
@@ -235,7 +258,7 @@ export const useVAPTScan = () => {
           }
           break;
           
-        case 3: // Vulnerability Analysis
+        case 4: // Vulnerability Analysis
           updatedStages[stageNumber - 1].results = {
             criticalVulns: vulnerabilities.filter(v => v.severity === 'Critical'),
             highVulns: vulnerabilities.filter(v => v.severity === 'High'),
@@ -245,7 +268,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 4: // Exploitation
+        case 5: // Exploitation
           const exploitableVulns = vulnerabilities.filter(v => 
             v.severity === 'Critical' || v.severity === 'High'
           );
@@ -259,7 +282,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 5: // Post Exploitation
+        case 6: // Post Exploitation
           updatedStages[stageNumber - 1].results = {
             accessMaintained: Math.random() > 0.5,
             dataAccessed: ['Configuration files', 'User credentials', 'Database connection strings'],
@@ -267,7 +290,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 6: // Analysis
+        case 7: // Analysis
           updatedStages[stageNumber - 1].results = {
             riskAssessment: {
               businessImpact: 'High',
@@ -279,7 +302,8 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 7: // Reporting
+        case 8: // Reporting
+          // Create summary counts from actual vulnerabilities
           const criticalCount = vulnerabilities.filter(v => v.severity === 'Critical').length;
           const highCount = vulnerabilities.filter(v => v.severity === 'High').length;
           const mediumCount = vulnerabilities.filter(v => v.severity === 'Medium').length;
@@ -308,7 +332,8 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 8: // Remediation Planning
+        case 9: // Remediation Planning
+          // Create remediation items based on actual vulnerabilities
           updatedStages[stageNumber - 1].results = {
             remediationItems: vulnerabilities.map(v => ({
               vulnerability: v,
@@ -323,7 +348,7 @@ export const useVAPTScan = () => {
           };
           break;
           
-        case 9: // Remediation Verification
+        case 10: // Remediation Verification
           updatedStages[stageNumber - 1].results = {
             verificationResults: vulnerabilities.map(v => ({
               vulnerability: v,
@@ -332,6 +357,7 @@ export const useVAPTScan = () => {
             }))
           };
           
+          // Create final scan results with updated summary counts
           const finalResultsObj: VAPTScanResults = {
             id: scanResults?.id || `scan-${Date.now()}`,
             timestamp: scanResults?.timestamp || new Date().toISOString(),
@@ -362,7 +388,7 @@ export const useVAPTScan = () => {
       setStages(updatedStages);
 
       await new Promise(resolve => setTimeout(resolve, 3000));
-      processStage(stageNumber + 1, formValues);
+      processStage(stageNumber + 1);
 
     } catch (error) {
       console.error(`Error processing stage ${stageNumber}:`, error);
@@ -375,7 +401,8 @@ export const useVAPTScan = () => {
 
   const [formValues, setFormValues] = useState<VAPTFormValues>({
     targetSystem: "",
-    scopeDetails: ""
+    scopeDetails: "",
+    testingMethod: "black-box"
   });
 
   const startAutomatedScan = (formValues: VAPTFormValues) => {
@@ -396,7 +423,7 @@ export const useVAPTScan = () => {
     setActiveStage(1);
     setFormValues(formValues);
 
-    processStage(1, formValues);
+    processStage(1);
   };
 
   const resetScan = () => {

@@ -29,7 +29,8 @@ const VAPTModule = () => {
 
   const [formValues, setFormValues] = useState<VAPTFormValues>({
     targetSystem: "",
-    scopeDetails: ""
+    scopeDetails: "",
+    testingMethod: "black-box"
   });
 
   const handleFormChange = (values: Partial<VAPTFormValues>) => {
@@ -42,8 +43,8 @@ const VAPTModule = () => {
         <div>
           <h1 className="text-3xl font-bold mb-2">VAPT Module</h1>
           <p className="text-gray-600 mb-6">
-            Vulnerability Assessment and Penetration Testing workflow with 9 stages
-            from reconnaissance to remediation verification.
+            Vulnerability Assessment and Penetration Testing workflow with 10 stages
+            from planning to remediation verification.
           </p>
         </div>
 
@@ -74,13 +75,11 @@ const VAPTModule = () => {
               <p className="text-gray-600">
                 Currently processing:{" "}
                 <span className="font-medium">
-                  {stages && activeStage > 0 && activeStage <= stages.length 
-                    ? stages[activeStage - 1]?.name || "Completing scan"
-                    : "Initializing scan"}
+                  {stages[activeStage - 1]?.name || "Completing scan"}
                 </span>
               </p>
               <p className="text-gray-500 text-sm mt-2">
-                Stage {Math.max(0, activeStage - 1)} of 9 complete ({progress}%)
+                Stage {activeStage - 1} of 10 complete ({progress}%)
               </p>
             </div>
           )}
@@ -100,11 +99,12 @@ const VAPTModule = () => {
             </div>
           )}
 
-          {scanComplete && showResults && scanResults && (
+          {scanComplete && showResults && (
             <ScanResults
-              scanResults={scanResults}
+              scanResults={scanResults!}
               vulnerabilities={vulnerabilities}
               stages={stages}
+              testingMethod={formValues.testingMethod}
               onDownloadReport={downloadReport}
               onResetScan={resetScan}
             />

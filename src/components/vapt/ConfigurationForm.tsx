@@ -50,6 +50,25 @@ export const ConfigurationForm: React.FC<ConfigurationFormProps> = ({
         />
       </div>
 
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Testing Method
+        </label>
+        <select
+          value={values.testingMethod}
+          onChange={(e) =>
+            onValuesChange({
+              testingMethod: e.target.value as VAPTFormValues["testingMethod"]
+            })
+          }
+          className="w-full rounded-md border border-gray-300 p-2"
+        >
+          <option value="black-box">Black Box Testing</option>
+          <option value="white-box">White Box Testing</option>
+          <option value="gray-box">Gray Box Testing</option>
+        </select>
+      </div>
+
       <div className="flex justify-end mt-8">
         <Button
           className="bg-blue-600 hover:bg-blue-700"
