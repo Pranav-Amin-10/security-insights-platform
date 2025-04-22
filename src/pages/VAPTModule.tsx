@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { AlertCircle, CheckCircle2, AlertTriangle, Info, Clock, Shield } from "lucide-react";
 import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
 import { 
@@ -105,195 +106,197 @@ const VAPTModule = () => {
   const [isAutomating, setIsAutomating] = useState<boolean>(false);
   const [scanComplete, setScanComplete] = useState<boolean>(false);
   const [showResults, setShowResults] = useState<boolean>(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number>(0);
   
-  const nextStage = async () => {
-    if (activeStage > stages.length) return;
-    
-    if (activeStage === 1) {
-      // Make sure we have at least the target system before proceeding
-      if (!targetSystem) {
-        toast.error("Please enter a target system before starting the scan");
-        return;
-      }
+  // Process each stage in sequence
+  const processStage = async (stageNumber: number) => {
+    if (stageNumber > stages.length) {
+      setScanComplete(true);
+      setIsAutomating(false);
+      setShowResults(true);
+      setLoading(false);
+      setProgress(100);
+      toast.success("VAPT scan completed successfully!");
+      return;
     }
     
-    setLoading(true);
+    setActiveStage(stageNumber);
+    setProgress(Math.min(100, Math.floor((stageNumber - 1) * 10)));
     
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const updatedStages = [...stages];
-    updatedStages[activeStage - 1].completed = true;
-    
-    switch (activeStage) {
-      case 1: // Planning
-        updatedStages[activeStage - 1].results = {
-          target: targetSystem,
-          scope: scopeDetails,
-          method: testingMethod,
-          timestamp: new Date().toISOString()
-        };
-        break;
-        
-      case 2: // Reconnaissance
-        try {
-          const shodanResults = await shodanReconnaissance(targetSystem);
-          const ipInfo = await getIPInfo(targetSystem);
-          const whois = await getWHOIS(targetSystem);
-          const dnsRecords = await getDNSRecords(targetSystem);
-          
-          updatedStages[activeStage - 1].results = {
-            shodan: shodanResults,
-            ipInfo,
-            whois,
-            dnsRecords
+    try {
+      const updatedStages = [...stages];
+      
+      switch (stageNumber) {
+        case 1: // Planning
+          updatedStages[stageNumber - 1].results = {
+            target: targetSystem,
+            scope: scopeDetails,
+            method: testingMethod,
+            timestamp: new Date().toISOString()
           };
-        } catch (error) {
-          console.error("Error during reconnaissance:", error);
-          toast.error("Error during reconnaissance phase");
-        }
-        break;
-        
-      case 3: // Scanning
-        try {
-          const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 5) + 5);
-          setVulnerabilities(scanVulnerabilities);
+          break;
           
-          updatedStages[activeStage - 1].results = {
-            openPorts: [80, 443, 22, 21, 3389, 8080].filter(() => Math.random() > 0.3),
-            services: [
-              { port: 80, service: 'http', version: 'nginx 1.18.0' },
-              { port: 443, service: 'https', version: 'nginx 1.18.0' },
-              { port: 22, service: 'ssh', version: 'OpenSSH 7.6p1' },
-            ],
-            vulnerabilities: scanVulnerabilities
-          };
-        } catch (error) {
-          console.error("Error during scanning:", error);
-          toast.error("Error during scanning phase");
-        }
-        break;
-        
-      case 4: // Vulnerability Analysis
-        updatedStages[activeStage - 1].results = {
-          criticalVulns: vulnerabilities.filter(v => v.severity === 'Critical'),
-          highVulns: vulnerabilities.filter(v => v.severity === 'High'),
-          mediumVulns: vulnerabilities.filter(v => v.severity === 'Medium'),
-          lowVulns: vulnerabilities.filter(v => v.severity === 'Low'),
-          infoVulns: vulnerabilities.filter(v => v.severity === 'Info')
-        };
-        break;
-        
-      case 5: // Exploitation
-        const exploitableVulns = vulnerabilities.filter(v => 
-          v.severity === 'Critical' || v.severity === 'High'
-        );
-        
-        updatedStages[activeStage - 1].results = {
-          exploited: exploitableVulns.map(v => ({
-            vulnerability: v,
-            exploitResult: Math.random() > 0.3 ? 'Success' : 'Failed',
-            details: `Attempted to exploit ${v.name} using common techniques.`
-          }))
-        };
-        break;
-        
-      case 6: // Post Exploitation
-        updatedStages[activeStage - 1].results = {
-          accessMaintained: Math.random() > 0.5,
-          dataAccessed: ['Configuration files', 'User credentials', 'Database connection strings'],
-          persistenceMechanisms: ['Scheduled task', 'Modified startup items']
-        };
-        break;
-        
-      case 7: // Analysis
-        updatedStages[activeStage - 1].results = {
-          riskAssessment: {
-            businessImpact: 'High',
-            dataCompromiseRisk: 'Medium',
-            operationalImpact: 'Medium'
-          },
-          attackVectors: ['Remote exploit', 'Credential compromise'],
-          rootCauses: ['Outdated software', 'Weak authentication', 'Misconfiguration']
-        };
-        break;
-        
-      case 8: // Reporting
-        const resultsObj: VAPTScanResults = {
-          id: `scan-${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          target: targetSystem,
-          stages: updatedStages,
-          vulnerabilities,
-          summary: {
-            criticalCount: vulnerabilities.filter(v => v.severity === 'Critical').length,
-            highCount: vulnerabilities.filter(v => v.severity === 'High').length,
-            mediumCount: vulnerabilities.filter(v => v.severity === 'Medium').length,
-            lowCount: vulnerabilities.filter(v => v.severity === 'Low').length,
-            infoCount: vulnerabilities.filter(v => v.severity === 'Info').length
-          }
-        };
-        
-        setScanResults(resultsObj);
-        updatedStages[activeStage - 1].results = {
-          reportGenerated: true,
-          reportTimestamp: new Date().toISOString()
-        };
-        break;
-        
-      case 9: // Remediation Planning
-        updatedStages[activeStage - 1].results = {
-          remediationItems: vulnerabilities.map(v => ({
-            vulnerability: v,
-            priority: v.severity === 'Critical' ? 'Immediate' : 
-                      v.severity === 'High' ? 'High' :
-                      v.severity === 'Medium' ? 'Medium' : 'Low',
-            suggestedFix: v.remediation,
-            timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
-                          v.severity === 'High' ? '1 week' :
-                          v.severity === 'Medium' ? '2 weeks' : '1 month'
-          }))
-        };
-        break;
-        
-      case 10: // Remediation Verification
-        updatedStages[activeStage - 1].results = {
-          verificationResults: vulnerabilities.map(v => ({
-            vulnerability: v,
-            verified: Math.random() > 0.3,
-            notes: Math.random() > 0.3 ? 'Successfully remediated' : 'Still vulnerable, needs further attention'
-          }))
-        };
-        
-        // Save final results to database/storage
-        if (scanResults) {
+        case 2: // Reconnaissance
           try {
-            await saveVAPTResults({
-              ...scanResults,
-              stages: updatedStages
-            });
+            const shodanResults = await shodanReconnaissance(targetSystem);
+            const ipInfo = await getIPInfo(targetSystem);
+            const whois = await getWHOIS(targetSystem);
+            const dnsRecords = await getDNSRecords(targetSystem);
+            
+            updatedStages[stageNumber - 1].results = {
+              shodan: shodanResults,
+              ipInfo,
+              whois,
+              dnsRecords
+            };
           } catch (error) {
-            console.error('Error saving results:', error);
-            toast.error("Error saving scan results");
+            console.error("Error during reconnaissance:", error);
+            toast.error("Error during reconnaissance phase, but continuing scan");
+            updatedStages[stageNumber - 1].results = { error: "Reconnaissance failed" };
           }
-        }
-        
-        // Mark scan as complete when we reach the end
-        if (activeStage === stages.length) {
-          setScanComplete(true);
-          setIsAutomating(false);
-          setShowResults(true);
-          toast.success("VAPT scan completed successfully!");
-        }
-        break;
-    }
-    
-    setStages(updatedStages);
-    setActiveStage(activeStage + 1);
-    setLoading(false);
-    
-    // Continue automation if not at the end
-    if (isAutomating && activeStage < stages.length) {
-      setTimeout(() => nextStage(), 500);
+          break;
+          
+        case 3: // Scanning
+          try {
+            const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 5) + 5);
+            setVulnerabilities(scanVulnerabilities);
+            
+            updatedStages[stageNumber - 1].results = {
+              openPorts: [80, 443, 22, 21, 3389, 8080].filter(() => Math.random() > 0.3),
+              services: [
+                { port: 80, service: 'http', version: 'nginx 1.18.0' },
+                { port: 443, service: 'https', version: 'nginx 1.18.0' },
+                { port: 22, service: 'ssh', version: 'OpenSSH 7.6p1' },
+              ],
+              vulnerabilities: scanVulnerabilities
+            };
+          } catch (error) {
+            console.error("Error during scanning:", error);
+            toast.error("Error during scanning phase, but continuing scan");
+            updatedStages[stageNumber - 1].results = { error: "Scanning failed" };
+          }
+          break;
+          
+        case 4: // Vulnerability Analysis
+          updatedStages[stageNumber - 1].results = {
+            criticalVulns: vulnerabilities.filter(v => v.severity === 'Critical'),
+            highVulns: vulnerabilities.filter(v => v.severity === 'High'),
+            mediumVulns: vulnerabilities.filter(v => v.severity === 'Medium'),
+            lowVulns: vulnerabilities.filter(v => v.severity === 'Low'),
+            infoVulns: vulnerabilities.filter(v => v.severity === 'Info')
+          };
+          break;
+          
+        case 5: // Exploitation
+          const exploitableVulns = vulnerabilities.filter(v => 
+            v.severity === 'Critical' || v.severity === 'High'
+          );
+          
+          updatedStages[stageNumber - 1].results = {
+            exploited: exploitableVulns.map(v => ({
+              vulnerability: v,
+              exploitResult: Math.random() > 0.3 ? 'Success' : 'Failed',
+              details: `Attempted to exploit ${v.name} using common techniques.`
+            }))
+          };
+          break;
+          
+        case 6: // Post Exploitation
+          updatedStages[stageNumber - 1].results = {
+            accessMaintained: Math.random() > 0.5,
+            dataAccessed: ['Configuration files', 'User credentials', 'Database connection strings'],
+            persistenceMechanisms: ['Scheduled task', 'Modified startup items']
+          };
+          break;
+          
+        case 7: // Analysis
+          updatedStages[stageNumber - 1].results = {
+            riskAssessment: {
+              businessImpact: 'High',
+              dataCompromiseRisk: 'Medium',
+              operationalImpact: 'Medium'
+            },
+            attackVectors: ['Remote exploit', 'Credential compromise'],
+            rootCauses: ['Outdated software', 'Weak authentication', 'Misconfiguration']
+          };
+          break;
+          
+        case 8: // Reporting
+          const resultsObj: VAPTScanResults = {
+            id: `scan-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            target: targetSystem,
+            stages: updatedStages,
+            vulnerabilities,
+            summary: {
+              criticalCount: vulnerabilities.filter(v => v.severity === 'Critical').length,
+              highCount: vulnerabilities.filter(v => v.severity === 'High').length,
+              mediumCount: vulnerabilities.filter(v => v.severity === 'Medium').length,
+              lowCount: vulnerabilities.filter(v => v.severity === 'Low').length,
+              infoCount: vulnerabilities.filter(v => v.severity === 'Info').length
+            }
+          };
+          
+          setScanResults(resultsObj);
+          updatedStages[stageNumber - 1].results = {
+            reportGenerated: true,
+            reportTimestamp: new Date().toISOString()
+          };
+          break;
+          
+        case 9: // Remediation Planning
+          updatedStages[stageNumber - 1].results = {
+            remediationItems: vulnerabilities.map(v => ({
+              vulnerability: v,
+              priority: v.severity === 'Critical' ? 'Immediate' : 
+                        v.severity === 'High' ? 'High' :
+                        v.severity === 'Medium' ? 'Medium' : 'Low',
+              suggestedFix: v.remediation,
+              timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
+                            v.severity === 'High' ? '1 week' :
+                            v.severity === 'Medium' ? '2 weeks' : '1 month'
+            }))
+          };
+          break;
+          
+        case 10: // Remediation Verification
+          updatedStages[stageNumber - 1].results = {
+            verificationResults: vulnerabilities.map(v => ({
+              vulnerability: v,
+              verified: Math.random() > 0.3,
+              notes: Math.random() > 0.3 ? 'Successfully remediated' : 'Still vulnerable, needs further attention'
+            }))
+          };
+          
+          // Save final results to database/storage
+          if (scanResults) {
+            try {
+              await saveVAPTResults({
+                ...scanResults,
+                stages: updatedStages
+              });
+            } catch (error) {
+              console.error('Error saving results:', error);
+              toast.error("Error saving scan results");
+            }
+          }
+          break;
+      }
+      
+      updatedStages[stageNumber - 1].completed = true;
+      setStages(updatedStages);
+      
+      // Process next stage after a brief delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      processStage(stageNumber + 1);
+      
+    } catch (error) {
+      console.error(`Error processing stage ${stageNumber}:`, error);
+      setScanError(`Error during stage ${stageNumber}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsAutomating(false);
+      setLoading(false);
+      toast.error(`Scan failed at stage ${stageNumber}`);
     }
   };
   
@@ -303,11 +306,20 @@ const VAPTModule = () => {
       return;
     }
     
+    setScanError(null);
+    setProgress(0);
     toast.info("Starting automated VAPT scan...");
     setIsAutomating(true);
     setShowResults(false);
     setScanComplete(false);
-    nextStage();
+    setLoading(true);
+    
+    // Reset stages
+    setStages(initialStages);
+    setActiveStage(1);
+    
+    // Start the automated process
+    processStage(1);
   };
   
   const resetScan = () => {
@@ -321,6 +333,8 @@ const VAPTModule = () => {
     setTestingMethod("black-box");
     setScanComplete(false);
     setShowResults(false);
+    setScanError(null);
+    setProgress(0);
     toast.info("Scan reset. Ready to start a new scan.");
   };
   
@@ -340,9 +354,6 @@ const VAPTModule = () => {
     }
   };
   
-  // Progress calculation
-  const progressPercentage = Math.min(100, Math.floor((activeStage - 1) * 10));
-  
   return (
     <Layout>
       <div className="space-y-6">
@@ -353,16 +364,11 @@ const VAPTModule = () => {
           </p>
         </div>
         
-        {!scanComplete && (
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full transition-all duration-500" 
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
+        {!scanComplete && !scanError && (
+          <Progress value={progress} className="h-2 mb-4" />
         )}
         
-        {!scanComplete && (
+        {!scanComplete && !scanError && isAutomating && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-6">
             {stages.map((stage) => (
               <div
@@ -385,7 +391,7 @@ const VAPTModule = () => {
         )}
         
         <Card className="p-6">
-          {!scanComplete && activeStage === 1 && (
+          {!scanComplete && !isAutomating && !scanError && activeStage === 1 && (
             <div className="space-y-4">
               <h2 className="text-xl font-semibold mb-4">
                 Target Configuration
@@ -451,14 +457,31 @@ const VAPTModule = () => {
           )}
           
           {/* Show loading indicator during automated scanning */}
-          {!scanComplete && activeStage > 1 && isAutomating && (
+          {!scanComplete && isAutomating && !scanError && (
             <div className="text-center py-10">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mb-4"></div>
               <h2 className="text-xl font-semibold mb-2">Automated Scan in Progress</h2>
               <p className="text-gray-600">
                 Currently processing: <span className="font-medium">{stages[activeStage - 1]?.name || "Completing scan"}</span>
               </p>
-              <p className="text-gray-500 text-sm mt-2">Stage {activeStage - 1} of 10 complete ({progressPercentage}%)</p>
+              <p className="text-gray-500 text-sm mt-2">Stage {activeStage - 1} of 10 complete ({progress}%)</p>
+            </div>
+          )}
+          
+          {/* Show error message if the scan fails */}
+          {scanError && (
+            <div className="text-center py-10">
+              <div className="inline-block rounded-full h-12 w-12 bg-red-100 flex items-center justify-center mb-4">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2 text-red-600">Scan Failed</h2>
+              <p className="text-gray-700 mb-4">{scanError}</p>
+              <Button 
+                variant="outline" 
+                onClick={resetScan}
+              >
+                Start New Scan
+              </Button>
             </div>
           )}
           
@@ -628,7 +651,7 @@ const VAPTModule = () => {
                 
                 <TabsContent value="remediation">
                   <div className="space-y-4">
-                    {stages[8].results?.remediationItems?.length > 0 ? (
+                    {stages[8]?.results?.remediationItems?.length > 0 ? (
                       stages[8].results.remediationItems.map((item: any, index: number) => (
                         <div 
                           key={index} 
