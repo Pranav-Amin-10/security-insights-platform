@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
 import { VAPTFormValues } from "@/types/vapt";
@@ -232,6 +233,7 @@ export const useVAPTScan = () => {
           
         case 3: // Scanning
           try {
+            // Generate between 8-15 vulnerabilities for better testing
             const scanVulnerabilities = generateVulnerabilities(Math.floor(Math.random() * 8) + 8);
             setVulnerabilities(scanVulnerabilities);
             
@@ -301,6 +303,13 @@ export const useVAPTScan = () => {
           break;
           
         case 8: // Reporting
+          // Create summary counts from actual vulnerabilities
+          const criticalCount = vulnerabilities.filter(v => v.severity === 'Critical').length;
+          const highCount = vulnerabilities.filter(v => v.severity === 'High').length;
+          const mediumCount = vulnerabilities.filter(v => v.severity === 'Medium').length;
+          const lowCount = vulnerabilities.filter(v => v.severity === 'Low').length;
+          const infoCount = vulnerabilities.filter(v => v.severity === 'Info').length;
+          
           const resultsObj: VAPTScanResults = {
             id: `scan-${Date.now()}`,
             timestamp: new Date().toISOString(),
@@ -308,11 +317,11 @@ export const useVAPTScan = () => {
             stages: updatedStages,
             vulnerabilities,
             summary: {
-              criticalCount: vulnerabilities.filter(v => v.severity === 'Critical').length,
-              highCount: vulnerabilities.filter(v => v.severity === 'High').length,
-              mediumCount: vulnerabilities.filter(v => v.severity === 'Medium').length,
-              lowCount: vulnerabilities.filter(v => v.severity === 'Low').length,
-              infoCount: vulnerabilities.filter(v => v.severity === 'Info').length
+              criticalCount,
+              highCount,
+              mediumCount,
+              lowCount,
+              infoCount
             }
           };
           
@@ -324,13 +333,14 @@ export const useVAPTScan = () => {
           break;
           
         case 9: // Remediation Planning
+          // Create remediation items based on actual vulnerabilities
           updatedStages[stageNumber - 1].results = {
             remediationItems: vulnerabilities.map(v => ({
               vulnerability: v,
               priority: v.severity === 'Critical' ? 'Immediate' : 
                         v.severity === 'High' ? 'High' :
                         v.severity === 'Medium' ? 'Medium' : 'Low',
-              suggestedFix: v.remediation,
+              suggestedFix: v.remediation || `Update and patch the affected component to address ${v.name}.`,
               timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
                             v.severity === 'High' ? '1 week' :
                             v.severity === 'Medium' ? '2 weeks' : '1 month'
@@ -347,16 +357,29 @@ export const useVAPTScan = () => {
             }))
           };
           
-          if (scanResults) {
-            try {
-              await saveVAPTResults({
-                ...scanResults,
-                stages: updatedStages
-              });
-            } catch (error) {
-              console.error('Error saving results:', error);
-              toast.error("Error saving scan results");
+          // Create final scan results with updated summary counts
+          const finalResultsObj: VAPTScanResults = {
+            id: scanResults?.id || `scan-${Date.now()}`,
+            timestamp: scanResults?.timestamp || new Date().toISOString(),
+            target: formValues.targetSystem,
+            stages: updatedStages,
+            vulnerabilities,
+            summary: {
+              criticalCount: vulnerabilities.filter(v => v.severity === 'Critical').length,
+              highCount: vulnerabilities.filter(v => v.severity === 'High').length,
+              mediumCount: vulnerabilities.filter(v => v.severity === 'Medium').length,
+              lowCount: vulnerabilities.filter(v => v.severity === 'Low').length,
+              infoCount: vulnerabilities.filter(v => v.severity === 'Info').length
             }
+          };
+          
+          setScanResults(finalResultsObj);
+          
+          try {
+            await saveVAPTResults(finalResultsObj);
+          } catch (error) {
+            console.error('Error saving results:', error);
+            toast.error("Error saving scan results");
           }
           break;
       }
