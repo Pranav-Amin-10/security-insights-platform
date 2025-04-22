@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
 import { VAPTFormValues } from "@/types/vapt";
@@ -102,7 +103,8 @@ export const useVAPTScan = () => {
     }
 
     setActiveStage(stageNumber);
-    setProgress(Math.min(100, Math.floor((stageNumber - 1) * 11.11)));
+    // Update progress calculation for 9 stages
+    setProgress(Math.min(100, Math.floor((stageNumber - 1) * (100 / stages.length))));
 
     try {
       const updatedStages = [...stages];
@@ -149,7 +151,8 @@ export const useVAPTScan = () => {
                 contactInfo: {
                   technical: whois?.tech_email || 'Not available',
                   administrative: whois?.admin_email || 'Not available'
-                }
+                },
+                domain_name: formValues.targetSystem
               },
               dnsRecords: {
                 ...dnsRecords,
@@ -186,7 +189,8 @@ export const useVAPTScan = () => {
                 contactInfo: {
                   technical: 'Not available',
                   administrative: 'Not available'
-                }
+                },
+                domain_name: formValues.targetSystem
               },
               dnsRecords: {
                 records: [],
