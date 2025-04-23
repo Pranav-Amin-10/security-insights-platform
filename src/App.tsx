@@ -7,9 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import VAPTModule from "./modules/vapt/pages/VAPTModule";
-import ComplianceModule from "./modules/compliance/pages/ComplianceModule";
-import SSLModule from "./modules/ssl/pages/SSLModule";
-import Dashboard from "./modules/dashboard/pages/Dashboard";
+import ComplianceModule from "./pages/ComplianceModule";
+import SSLModule from "./pages/SSLModule";
+import Dashboard from "./pages/Dashboard";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();

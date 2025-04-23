@@ -1,6 +1,6 @@
 
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable'; // This imports the plugin and attaches it to jsPDF
+import 'jspdf-autotable';
 import { Vulnerability, VAPTScanResults, ComplianceAudit, SSLCheckResult } from '../types';
 
 // Add type definitions for jsPDF-autotable
@@ -15,8 +15,6 @@ declare module 'jspdf' {
 
 // Generate a VAPT report in PDF format
 export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
-  console.log("Generating PDF with results:", results);
-  
   const doc = new jsPDF();
   
   try {
@@ -39,22 +37,21 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     doc.text('Vulnerability Summary', 14, 68);
     
     // Ensure summary data with counts
-    const criticalCount = results.summary?.criticalCount || 0;
-    const highCount = results.summary?.highCount || 0;
-    const mediumCount = results.summary?.mediumCount || 0;
-    const lowCount = results.summary?.lowCount || 0;
-    const infoCount = results.summary?.infoCount || 0;
-    
     const summaryData = [
-      ['Critical', criticalCount.toString()],
-      ['High', highCount.toString()],
-      ['Medium', mediumCount.toString()],
-      ['Low', lowCount.toString()],
-      ['Informational', infoCount.toString()],
-      ['Total', (criticalCount + highCount + mediumCount + lowCount + infoCount).toString()]
+      ['Critical', (results.summary?.criticalCount || 0).toString()],
+      ['High', (results.summary?.highCount || 0).toString()],
+      ['Medium', (results.summary?.mediumCount || 0).toString()],
+      ['Low', (results.summary?.lowCount || 0).toString()],
+      ['Informational', (results.summary?.infoCount || 0).toString()],
+      ['Total', (
+        (results.summary?.criticalCount || 0) +
+        (results.summary?.highCount || 0) +
+        (results.summary?.mediumCount || 0) +
+        (results.summary?.lowCount || 0) +
+        (results.summary?.infoCount || 0)
+      ).toString()]
     ];
     
-    // Use the autoTable plugin
     doc.autoTable({
       startY: 73,
       head: [['Severity', 'Count']],
@@ -153,16 +150,16 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     }
     
     // Add remediation items if available
-    const remediationItems = results.stages[7]?.results?.remediationItems;
-    
-    if (remediationItems) {
+    if (results.stages && results.stages[7] && results.stages[7].results && results.stages[7].results.remediationItems) {
       doc.addPage();
       doc.setFontSize(18);
       doc.text('Remediation Plan', 14, 20);
       
+      const remItems = results.stages[7].results.remediationItems;
+      
       // Ensure we have remediation items with proper data
-      const remData = remediationItems && remediationItems.length > 0 ? 
-        remediationItems.map((item: any) => [
+      const remData = remItems && remItems.length > 0 ? 
+        remItems.map((item: any) => [
           item.vulnerability?.name || 'Unknown Vulnerability',
           item.priority || 'Unknown',
           item.timeEstimate || 'Unknown',
@@ -183,7 +180,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       });
       
       // Add overall risk assessment from stage 8
-      if (results.stages[7].results?.overallRisk) {
+      if (results.stages[7].results.overallRisk) {
         const riskY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 180;
         doc.setFontSize(14);
         doc.text('Overall Risk Assessment', 14, riskY);
@@ -247,7 +244,6 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     // Return a basic document with an error message
     const errorDoc = new jsPDF();
     errorDoc.text("Error generating report. Please try again.", 20, 20);
-    errorDoc.text("Error details: " + (error instanceof Error ? error.message : String(error)), 20, 30);
     return errorDoc;
   }
 };
