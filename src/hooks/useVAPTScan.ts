@@ -337,11 +337,14 @@ export const useVAPTScan = () => {
             suggestedFix: v.remediation || `Update and patch the affected component to address ${v.name}.`,
             timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
                           v.severity === 'High' ? '1 week' :
-                          v.severity === 'Medium' ? '2 weeks' : '1 month'
+                          v.severity === 'Medium' ? '2 weeks' : '1 month',
+            status: Math.random() > 0.5 ? 'In Progress' : 'Scheduled'
           }));
           
           updatedStages[stageNumber - 1].results = {
-            remediationItems: remediationItems
+            remediationItems: remediationItems,
+            overallRisk: Math.random() > 0.6 ? 'High' : Math.random() > 0.3 ? 'Medium' : 'Low',
+            estimatedTimeToRemediate: `${Math.floor(Math.random() * 8) + 2} weeks`
           };
           break;
           

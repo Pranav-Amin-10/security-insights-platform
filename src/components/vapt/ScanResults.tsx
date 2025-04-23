@@ -71,6 +71,32 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
           )}
         </div>
       </div>
+
+      <div className="bg-white border border-gray-200 rounded-md p-4">
+        <h3 className="text-lg font-medium mb-2">Vulnerability Metrics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 text-center">
+            <p className="text-lg font-bold text-red-700">{scanResults?.summary?.criticalCount || 0}</p>
+            <p className="text-xs text-red-600">Critical</p>
+          </div>
+          <div className="bg-orange-50 border border-orange-200 rounded-md p-3 text-center">
+            <p className="text-lg font-bold text-orange-700">{scanResults?.summary?.highCount || 0}</p>
+            <p className="text-xs text-orange-600">High</p>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-center">
+            <p className="text-lg font-bold text-yellow-700">{scanResults?.summary?.mediumCount || 0}</p>
+            <p className="text-xs text-yellow-600">Medium</p>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-center">
+            <p className="text-lg font-bold text-blue-700">{scanResults?.summary?.lowCount || 0}</p>
+            <p className="text-xs text-blue-600">Low</p>
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-md p-3 text-center">
+            <p className="text-lg font-bold text-gray-700">{scanResults?.summary?.infoCount || 0}</p>
+            <p className="text-xs text-gray-600">Info</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -319,59 +345,76 @@ export const ScanResults: React.FC<ScanResultsProps> = ({
     return (
       <div className="space-y-4">
         {remediationItems && remediationItems.length > 0 ? (
-          remediationItems.map((item: any, index: number) => (
-            <div
-              key={index}
-              className={`border rounded-md overflow-hidden ${
-                item.priority === "Immediate"
-                  ? "border-red-300"
-                  : item.priority === "High"
-                  ? "border-orange-300"
-                  : item.priority === "Medium"
-                  ? "border-yellow-300"
-                  : "border-blue-300"
-              }`}
-            >
+          <>
+            <div className="bg-white border border-gray-200 rounded-md p-4 mb-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Remediation Summary</h3>
+                <div className="text-sm text-gray-600">
+                  Estimated completion time: {stages[7]?.results?.estimatedTimeToRemediate || "Unknown"}
+                </div>
+              </div>
+              <div className="text-sm mt-2">Overall risk level: <span className="font-medium">{stages[7]?.results?.overallRisk || "Medium"}</span></div>
+            </div>
+            
+            {remediationItems.map((item: any, index: number) => (
               <div
-                className={`px-4 py-2 flex items-center justify-between ${
+                key={index}
+                className={`border rounded-md overflow-hidden ${
                   item.priority === "Immediate"
-                    ? "bg-red-100"
+                    ? "border-red-300"
                     : item.priority === "High"
-                    ? "bg-orange-100"
+                    ? "border-orange-300"
                     : item.priority === "Medium"
-                    ? "bg-yellow-100"
-                    : "bg-blue-100"
+                    ? "border-yellow-300"
+                    : "border-blue-300"
                 }`}
               >
-                <h5 className="font-medium">{item.vulnerability.name}</h5>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full ${
-                      item.priority === "Immediate"
-                        ? "bg-red-200 text-red-800"
-                        : item.priority === "High"
-                        ? "bg-orange-200 text-orange-800"
-                        : item.priority === "Medium"
-                        ? "bg-yellow-200 text-yellow-800"
-                        : "bg-blue-200 text-blue-800"
-                    }`}
-                  >
-                    {item.priority}
-                  </span>
-                  <span className="text-xs font-medium px-2 py-1 bg-gray-200 rounded-full">
-                    {item.timeEstimate}
-                  </span>
+                <div
+                  className={`px-4 py-2 flex items-center justify-between ${
+                    item.priority === "Immediate"
+                      ? "bg-red-100"
+                      : item.priority === "High"
+                      ? "bg-orange-100"
+                      : item.priority === "Medium"
+                      ? "bg-yellow-100"
+                      : "bg-blue-100"
+                  }`}
+                >
+                  <h5 className="font-medium">{item.vulnerability.name}</h5>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        item.priority === "Immediate"
+                          ? "bg-red-200 text-red-800"
+                          : item.priority === "High"
+                          ? "bg-orange-200 text-orange-800"
+                          : item.priority === "Medium"
+                          ? "bg-yellow-200 text-yellow-800"
+                          : "bg-blue-200 text-blue-800"
+                      }`}
+                    >
+                      {item.priority}
+                    </span>
+                    <span className="text-xs font-medium px-2 py-1 bg-gray-200 rounded-full">
+                      {item.timeEstimate}
+                    </span>
+                    {item.status && (
+                      <span className="text-xs font-medium px-2 py-1 bg-purple-100 text-purple-800 rounded-full">
+                        {item.status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <p className="text-sm mb-3">{item.vulnerability.description}</p>
+                  <div className="bg-white border border-gray-200 rounded-md p-3">
+                    <h6 className="text-sm font-medium mb-1">Suggested Fix:</h6>
+                    <p className="text-sm">{item.suggestedFix}</p>
+                  </div>
                 </div>
               </div>
-              <div className="p-4">
-                <p className="text-sm mb-3">{item.vulnerability.description}</p>
-                <div className="bg-white border border-gray-200 rounded-md p-3">
-                  <h6 className="text-sm font-medium mb-1">Suggested Fix:</h6>
-                  <p className="text-sm">{item.suggestedFix}</p>
-                </div>
-              </div>
-            </div>
-          ))
+            ))}
+          </>
         ) : (
           <p className="text-gray-500">No remediation items were identified</p>
         )}

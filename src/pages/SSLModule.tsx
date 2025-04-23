@@ -8,12 +8,25 @@ import { CheckCircle2, Clock, Lock, AlertCircle, Shield, Info } from "lucide-rea
 import { SSLCheckResult } from "@/types";
 import { checkSSL, saveSSLResults } from "@/lib/api-utils";
 import { generateSSLReport } from "@/lib/pdf-utils";
+import { toast } from "sonner";
 
 const SSLModule = () => {
   const [domain, setDomain] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [checkComplete, setCheckComplete] = useState<boolean>(false);
   const [results, setResults] = useState<SSLCheckResult | null>(null);
+  
+  // Get Rating based on score
+  const getRatingFromScore = (score: number): 'A+' | 'A' | 'A-' | 'B' | 'C' | 'D' | 'E' | 'F' => {
+    if (score > 95) return 'A+';
+    if (score > 90) return 'A';
+    if (score <= 60) return 'A-'; // As per requirement
+    if (score > 80) return 'B';
+    if (score > 70) return 'C';
+    if (score > 60) return 'D';
+    if (score > 50) return 'E';
+    return 'F';
+  };
   
   // Perform the SSL check
   const performCheck = async () => {
@@ -24,13 +37,21 @@ const SSLModule = () => {
     try {
       // Simulate API call
       const sslResults = await checkSSL(domain);
-      setResults(sslResults);
+      
+      // Apply our custom rating logic
+      const updatedResults = {
+        ...sslResults,
+        overallRating: getRatingFromScore(sslResults.score)
+      };
+      
+      setResults(updatedResults);
       setCheckComplete(true);
       
       // Save to Supabase
-      await saveSSLResults(sslResults);
+      await saveSSLResults(updatedResults);
     } catch (error) {
       console.error('Error checking SSL:', error);
+      toast.error("Failed to check SSL configuration");
     } finally {
       setLoading(false);
     }
@@ -38,10 +59,19 @@ const SSLModule = () => {
   
   // Download the report
   const downloadReport = () => {
-    if (!results) return;
-    
-    const doc = generateSSLReport(results);
-    doc.save(`SSL_Report_${results.domain}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    if (!results) {
+      toast.error("No scan results available to download");
+      return;
+    }
+
+    try {
+      const doc = generateSSLReport(results);
+      doc.save(`SSL_Report_${results.domain}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast.success("Report downloaded successfully");
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error("Error generating report");
+    }
   };
   
   // Reset the check
