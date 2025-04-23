@@ -1,4 +1,3 @@
-
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Vulnerability, VAPTScanResults, ComplianceAudit, SSLCheckResult } from '../types';
@@ -58,9 +57,17 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     const currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 110;
     doc.text('Identified Vulnerabilities', 14, currentY);
     
-    // Ensure we have vulnerabilities data
-    const vulnData = results.vulnerabilities && results.vulnerabilities.length > 0 ? 
-      results.vulnerabilities.map((vuln: Vulnerability) => [
+    // Make sure we're using the actual vulnerabilities from results
+    // First check directly in the results object, then fallback to stages if needed
+    const vulnerabilityList = results.vulnerabilities && results.vulnerabilities.length > 0 
+      ? results.vulnerabilities 
+      : (results.stages[1]?.results?.vulnerabilities || []);
+    
+    console.log('Vulnerabilities for PDF:', vulnerabilityList);
+    
+    // Create data for the vulnerabilities table
+    const vulnData = vulnerabilityList && vulnerabilityList.length > 0 ? 
+      vulnerabilityList.map((vuln: Vulnerability) => [
         vuln.severity || 'Unknown',
         vuln.name || 'Unnamed Vulnerability',
         vuln.cveId || 'N/A',
@@ -83,8 +90,9 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     
     let yPosition = 30;
     
-    if (results.vulnerabilities && results.vulnerabilities.length > 0) {
-      results.vulnerabilities.slice(0, 5).forEach((vuln: Vulnerability, index: number) => {
+    if (vulnerabilityList && vulnerabilityList.length > 0) {
+      // Show all vulnerabilities, not just the first 5
+      vulnerabilityList.forEach((vuln: Vulnerability, index: number) => {
         // Check if we need a new page
         if (yPosition > 250) {
           doc.addPage();
