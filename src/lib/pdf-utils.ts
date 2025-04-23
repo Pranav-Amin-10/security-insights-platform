@@ -1,20 +1,11 @@
 
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { Vulnerability, VAPTScanResults, ComplianceAudit, SSLCheckResult } from '../types';
-
-// Add type definitions for jsPDF-autotable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: {
-      finalY: number;
-    };
-  }
-}
 
 // Generate a VAPT report in PDF format
 export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
+  // Initialize jsPDF
   const doc = new jsPDF();
   
   try {
@@ -52,7 +43,8 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       ).toString()]
     ];
     
-    doc.autoTable({
+    // Use autoTable directly imported from jspdf-autotable
+    autoTable(doc, {
       startY: 73,
       head: [['Severity', 'Count']],
       body: summaryData,
@@ -62,8 +54,8 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     
     // Add vulnerabilities
     doc.setFontSize(16);
-    // Get current position
-    const currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 110;
+    // Get current position after the last table
+    const currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 110;
     doc.text('Identified Vulnerabilities', 14, currentY);
     
     // Ensure we have vulnerabilities data
@@ -76,7 +68,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       ]) : 
       [['N/A', 'No vulnerabilities identified', 'N/A', 'N/A']];
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: currentY + 5,
       head: [['Severity', 'Vulnerability', 'CVE ID', 'CVSS Score']],
       body: vulnData,
@@ -167,7 +159,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
         ]) : 
         [['N/A', 'N/A', 'N/A', 'No remediation items available']];
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: 30,
         head: [['Vulnerability', 'Priority', 'Timeline', 'Suggested Fix']],
         body: remData,
@@ -181,7 +173,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       
       // Add overall risk assessment from stage 8
       if (results.stages[7].results.overallRisk) {
-        const riskY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 180;
+        const riskY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 180;
         doc.setFontSize(14);
         doc.text('Overall Risk Assessment', 14, riskY);
         
@@ -203,7 +195,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       stage.description || 'No description available'
     ]);
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: 30,
       head: [['Stage', 'Status', 'Description']],
       body: stagesData,
@@ -212,7 +204,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     });
     
     // Add recommendations based on findings
-    const recsY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 180;
+    const recsY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 180;
     doc.setFontSize(16);
     doc.text('Recommendations', 14, recsY);
     
@@ -244,6 +236,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     // Return a basic document with an error message
     const errorDoc = new jsPDF();
     errorDoc.text("Error generating report. Please try again.", 20, 20);
+    errorDoc.text(`Error details: ${error}`, 20, 30);
     return errorDoc;
   }
 };
@@ -282,7 +275,7 @@ export const generateComplianceReport = (audit: ComplianceAudit): jsPDF => {
       ).toString()]
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: 55,
       head: [['Status', 'Count']],
       body: summaryData,
@@ -292,7 +285,7 @@ export const generateComplianceReport = (audit: ComplianceAudit): jsPDF => {
     
     // Add control details
     doc.setFontSize(16);
-    const controlY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 100;
+    const controlY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 100;
     doc.text('Control Details', 14, controlY);
     
     // Create control data array for the table
@@ -303,8 +296,8 @@ export const generateComplianceReport = (audit: ComplianceAudit): jsPDF => {
       control.comments || ''
     ]);
     
-    doc.autoTable({
-      startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 20 : controlY + 5,
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 20 : controlY + 5,
       head: [['Section', 'Control', 'Status', 'Comments']],
       body: controlData,
       theme: 'striped',
@@ -335,7 +328,7 @@ export const generateComplianceReport = (audit: ComplianceAudit): jsPDF => {
         `Implement measures to address ${control.control} requirements.`
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: 30,
         head: [['Section', 'Control', 'Status', 'Recommendation']],
         body: remediationData,
@@ -363,6 +356,7 @@ export const generateComplianceReport = (audit: ComplianceAudit): jsPDF => {
     // Return a basic document with an error message
     const errorDoc = new jsPDF();
     errorDoc.text("Error generating report. Please try again.", 20, 20);
+    errorDoc.text(`Error details: ${error}`, 20, 30);
     return errorDoc;
   }
 };
@@ -421,7 +415,7 @@ export const generateSSLReport = (result: SSLCheckResult): jsPDF => {
       ['Days Remaining', result.certificate.daysRemaining.toString()]
     ];
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: 95,
       head: [['Property', 'Value']],
       body: certData,
@@ -431,7 +425,7 @@ export const generateSSLReport = (result: SSLCheckResult): jsPDF => {
     
     // Add protocol support
     doc.setFontSize(16);
-    const protocolY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 100;
+    const protocolY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 100;
     doc.text('Protocol Support', 14, protocolY);
     
     const protocolData = result.protocols.map(protocol => [
@@ -440,8 +434,8 @@ export const generateSSLReport = (result: SSLCheckResult): jsPDF => {
       protocol.secure ? 'Secure' : 'Insecure'
     ]);
     
-    doc.autoTable({
-      startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 20 : protocolY + 5,
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 20 : protocolY + 5,
       head: [['Protocol', 'Status', 'Security']],
       body: protocolData,
       theme: 'striped',
@@ -450,7 +444,7 @@ export const generateSSLReport = (result: SSLCheckResult): jsPDF => {
     
     // Add cipher support
     doc.setFontSize(16);
-    const cipherY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 100;
+    const cipherY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 100;
     doc.text('Cipher Support', 14, cipherY);
     
     const cipherData = result.ciphers.map(cipher => [
@@ -458,8 +452,8 @@ export const generateSSLReport = (result: SSLCheckResult): jsPDF => {
       cipher.strength
     ]);
     
-    doc.autoTable({
-      startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 20 : cipherY + 5,
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 20 : cipherY + 5,
       head: [['Cipher', 'Strength']],
       body: cipherData,
       theme: 'striped',
@@ -478,7 +472,7 @@ export const generateSSLReport = (result: SSLCheckResult): jsPDF => {
         vuln.description
       ]);
       
-      doc.autoTable({
+      autoTable(doc, {
         startY: 25,
         head: [['Vulnerability', 'Severity', 'Description']],
         body: vulnData,
@@ -539,7 +533,7 @@ export const generateSSLReport = (result: SSLCheckResult): jsPDF => {
     
     // Add recommendations to the report
     if (recommendations.length > 0) {
-      doc.autoTable({
+      autoTable(doc, {
         startY: 25,
         head: [['Recommendation', 'Description']],
         body: recommendations,
@@ -568,6 +562,7 @@ export const generateSSLReport = (result: SSLCheckResult): jsPDF => {
     // Return a basic document with an error message
     const errorDoc = new jsPDF();
     errorDoc.text("Error generating report. Please try again.", 20, 20);
+    errorDoc.text(`Error details: ${error}`, 20, 30);
     return errorDoc;
   }
 };
