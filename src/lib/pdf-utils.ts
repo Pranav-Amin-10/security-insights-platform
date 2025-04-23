@@ -1,3 +1,4 @@
+
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { Vulnerability, VAPTScanResults, ComplianceAudit, SSLCheckResult } from '../types';
@@ -27,12 +28,13 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     
     // Add target information
     doc.setFontSize(12);
-    doc.text(`Target: ${results.target}`, 14, 40);
-    doc.text(`Scan ID: ${results.id}`, 14, 48);
+    doc.text(`Target: ${results.target || 'Not specified'}`, 14, 40);
+    doc.text(`Scan ID: ${results.id || 'Unknown'}`, 14, 48);
+    doc.text(`Scan Date: ${new Date(results.timestamp).toLocaleString()}`, 14, 56);
     
     // Add summary
     doc.setFontSize(16);
-    doc.text('Vulnerability Summary', 14, 60);
+    doc.text('Vulnerability Summary', 14, 68);
     
     const summaryData = [
       ['Critical', results.summary.criticalCount.toString()],
@@ -50,7 +52,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     ];
     
     doc.autoTable({
-      startY: 65,
+      startY: 73,
       head: [['Severity', 'Count']],
       body: summaryData,
       theme: 'striped',
@@ -60,18 +62,20 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     // Add vulnerabilities
     doc.setFontSize(16);
     // Get current position
-    const currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 100;
+    const currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 110;
     doc.text('Identified Vulnerabilities', 14, currentY);
     
-    const vulnData = results.vulnerabilities.map((vuln: Vulnerability) => [
-      vuln.severity,
-      vuln.name,
-      vuln.cveId || 'N/A',
-      vuln.cvssScore?.toString() || 'N/A'
-    ]);
+    const vulnData = results.vulnerabilities.length > 0 ? 
+      results.vulnerabilities.map((vuln: Vulnerability) => [
+        vuln.severity,
+        vuln.name,
+        vuln.cveId || 'N/A',
+        vuln.cvssScore?.toString() || 'N/A'
+      ]) : 
+      [['N/A', 'No vulnerabilities identified', 'N/A', 'N/A']];
     
     doc.autoTable({
-      startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 20 : currentY + 5,
+      startY: currentY + 5,
       head: [['Severity', 'Vulnerability', 'CVE ID', 'CVSS Score']],
       body: vulnData,
       theme: 'striped',
@@ -85,58 +89,63 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     
     let yPosition = 30;
     
-    results.vulnerabilities.forEach((vuln: Vulnerability, index: number) => {
-      // Check if we need a new page
-      if (yPosition > 250) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      doc.setFontSize(14);
-      doc.text(`${index + 1}. ${vuln.name}`, 14, yPosition);
-      yPosition += 8;
-      
-      doc.setFontSize(10);
-      doc.text(`Severity: ${vuln.severity}`, 20, yPosition);
-      yPosition += 6;
-      
-      if (vuln.cveId) {
-        doc.text(`CVE ID: ${vuln.cveId}`, 20, yPosition);
-        yPosition += 6;
-      }
-      
-      if (vuln.cvssScore) {
-        doc.text(`CVSS Score: ${vuln.cvssScore}`, 20, yPosition);
-        yPosition += 6;
-      }
-      
-      doc.text('Description:', 20, yPosition);
-      yPosition += 6;
-      
-      // Handle long descriptions with wrapping
-      const descLines = doc.splitTextToSize(vuln.description, 170);
-      doc.text(descLines, 25, yPosition);
-      yPosition += descLines.length * 6;
-      
-      if (vuln.remediation) {
-        doc.text('Remediation:', 20, yPosition);
+    if (results.vulnerabilities.length > 0) {
+      results.vulnerabilities.forEach((vuln: Vulnerability, index: number) => {
+        // Check if we need a new page
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        doc.setFontSize(14);
+        doc.text(`${index + 1}. ${vuln.name}`, 14, yPosition);
+        yPosition += 8;
+        
+        doc.setFontSize(10);
+        doc.text(`Severity: ${vuln.severity}`, 20, yPosition);
         yPosition += 6;
         
-        const remLines = doc.splitTextToSize(vuln.remediation, 170);
-        doc.text(remLines, 25, yPosition);
-        yPosition += remLines.length * 6;
-      }
-      
-      if (vuln.affected) {
-        doc.text('Affected:', 20, yPosition);
+        if (vuln.cveId) {
+          doc.text(`CVE ID: ${vuln.cveId}`, 20, yPosition);
+          yPosition += 6;
+        }
+        
+        if (vuln.cvssScore !== undefined) {
+          doc.text(`CVSS Score: ${vuln.cvssScore}`, 20, yPosition);
+          yPosition += 6;
+        }
+        
+        doc.text('Description:', 20, yPosition);
         yPosition += 6;
-        doc.text(vuln.affected, 25, yPosition);
-        yPosition += 6;
-      }
-      
-      // Add spacing between vulnerabilities
-      yPosition += 10;
-    });
+        
+        // Handle long descriptions with wrapping
+        const descLines = doc.splitTextToSize(vuln.description || 'No description provided', 170);
+        doc.text(descLines, 25, yPosition);
+        yPosition += descLines.length * 6;
+        
+        if (vuln.remediation) {
+          doc.text('Remediation:', 20, yPosition);
+          yPosition += 6;
+          
+          const remLines = doc.splitTextToSize(vuln.remediation, 170);
+          doc.text(remLines, 25, yPosition);
+          yPosition += remLines.length * 6;
+        }
+        
+        if (vuln.affected) {
+          doc.text('Affected:', 20, yPosition);
+          yPosition += 6;
+          doc.text(vuln.affected, 25, yPosition);
+          yPosition += 6;
+        }
+        
+        // Add spacing between vulnerabilities
+        yPosition += 10;
+      });
+    } else {
+      doc.setFontSize(12);
+      doc.text('No vulnerabilities were identified in this scan.', 14, yPosition);
+    }
     
     // Add remediation items if available
     if (results.stages && results.stages[7] && results.stages[7].results && results.stages[7].results.remediationItems) {
@@ -145,12 +154,14 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       doc.text('Remediation Plan', 14, 20);
       
       const remItems = results.stages[7].results.remediationItems;
-      const remData = remItems.map((item: any) => [
-        item.vulnerability.name,
-        item.priority,
-        item.timeEstimate,
-        item.suggestedFix
-      ]);
+      const remData = remItems.length > 0 ? 
+        remItems.map((item: any) => [
+          item.vulnerability.name,
+          item.priority,
+          item.timeEstimate,
+          item.suggestedFix
+        ]) : 
+        [['N/A', 'N/A', 'N/A', 'No remediation items available']];
       
       doc.autoTable({
         startY: 30,
@@ -163,9 +174,20 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
         },
         styles: { overflow: 'linebreak', cellPadding: 3 }
       });
+      
+      // Add overall risk assessment from stage 8
+      if (results.stages[7].results.overallRisk) {
+        const riskY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 180;
+        doc.setFontSize(14);
+        doc.text('Overall Risk Assessment', 14, riskY);
+        
+        doc.setFontSize(12);
+        doc.text(`Risk Level: ${results.stages[7].results.overallRisk}`, 14, riskY + 10);
+        doc.text(`Estimated Time to Remediate: ${results.stages[7].results.estimatedTimeToRemediate || 'Unknown'}`, 14, riskY + 20);
+      }
     }
     
-    // Add completion information
+    // Add scan completion information
     doc.addPage();
     doc.setFontSize(18);
     doc.text('Scan Completion Details', 14, 20);
@@ -183,6 +205,24 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       body: stagesData,
       theme: 'striped',
       headStyles: { fillColor: [33, 150, 243] }
+    });
+    
+    // Add recommendations based on findings
+    const recsY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 180;
+    doc.setFontSize(16);
+    doc.text('Recommendations', 14, recsY);
+    
+    const recsList = [
+      'Implement regular vulnerability scanning and penetration testing',
+      'Establish a formal patch management process',
+      'Develop and enforce security policies and procedures',
+      'Provide security awareness training for all employees',
+      'Implement the principle of least privilege for all systems'
+    ];
+    
+    recsList.forEach((rec, index) => {
+      doc.setFontSize(12);
+      doc.text(`${index + 1}. ${rec}`, 20, recsY + 10 + (index * 10));
     });
     
     // Add footer with page numbers

@@ -80,6 +80,58 @@ const initialStages: VAPTStage[] = [
   }
 ];
 
+// Mock remediation templates that will be used to generate random remediation data
+const remediationTemplates = [
+  {
+    priority: "Immediate",
+    timeEstimate: "1-2 days",
+    suggestedFix: "Update the affected software to the latest version and apply all security patches.",
+    status: "In Progress"
+  },
+  {
+    priority: "High",
+    timeEstimate: "3-5 days",
+    suggestedFix: "Implement proper input validation and sanitization to prevent injection attacks.",
+    status: "Scheduled"
+  },
+  {
+    priority: "Medium",
+    timeEstimate: "1-2 weeks",
+    suggestedFix: "Configure firewall rules to restrict access to sensitive services.",
+    status: "Not Started"
+  },
+  {
+    priority: "Low",
+    timeEstimate: "2-4 weeks",
+    suggestedFix: "Update security policies and conduct user training to improve security awareness.",
+    status: "In Progress"
+  },
+  {
+    priority: "Medium",
+    timeEstimate: "1 week",
+    suggestedFix: "Implement multi-factor authentication for all administrative accounts.",
+    status: "Scheduled"
+  },
+  {
+    priority: "High",
+    timeEstimate: "4 days",
+    suggestedFix: "Disable unnecessary services and remove unused software components.",
+    status: "Not Started"
+  },
+  {
+    priority: "Immediate",
+    timeEstimate: "1 day",
+    suggestedFix: "Rotate all compromised credentials and implement a stronger password policy.",
+    status: "In Progress"
+  },
+  {
+    priority: "Low",
+    timeEstimate: "1 month",
+    suggestedFix: "Conduct a full security audit and implement recommendations.",
+    status: "Scheduled"
+  }
+];
+
 export const useVAPTScan = () => {
   const [activeStage, setActiveStage] = useState<number>(1);
   const [stages, setStages] = useState<VAPTStage[]>(initialStages);
@@ -95,6 +147,27 @@ export const useVAPTScan = () => {
     targetSystem: "",
     scopeDetails: ""
   });
+
+  // Helper function to generate random remediation data based on templates
+  const generateRemediationData = (vulns: Vulnerability[]) => {
+    return vulns.map(vuln => {
+      // Select a random template
+      const template = remediationTemplates[Math.floor(Math.random() * remediationTemplates.length)];
+      
+      // For critical vulnerabilities, always set priority to Immediate
+      const priority = vuln.severity === 'Critical' ? 'Immediate' : 
+                       vuln.severity === 'High' ? 'High' :
+                       vuln.severity === 'Medium' ? 'Medium' : 'Low';
+      
+      return {
+        vulnerability: vuln,
+        priority,
+        suggestedFix: template.suggestedFix,
+        timeEstimate: template.timeEstimate,
+        status: template.status
+      };
+    });
+  };
 
   const processStage = async (stageNumber: number) => {
     if (stageNumber > stages.length) {
@@ -328,18 +401,8 @@ export const useVAPTScan = () => {
           break;
           
         case 8: // Remediation Planning
-          // Create remediation items based on actual vulnerabilities
-          const remediationItems = vulnerabilities.map(v => ({
-            vulnerability: v,
-            priority: v.severity === 'Critical' ? 'Immediate' : 
-                      v.severity === 'High' ? 'High' :
-                      v.severity === 'Medium' ? 'Medium' : 'Low',
-            suggestedFix: v.remediation || `Update and patch the affected component to address ${v.name}.`,
-            timeEstimate: v.severity === 'Critical' ? '1-2 days' : 
-                          v.severity === 'High' ? '1 week' :
-                          v.severity === 'Medium' ? '2 weeks' : '1 month',
-            status: Math.random() > 0.5 ? 'In Progress' : 'Scheduled'
-          }));
+          // Always generate mock remediation data regardless of vulnerabilities
+          const remediationItems = generateRemediationData(vulnerabilities);
           
           updatedStages[stageNumber - 1].results = {
             remediationItems: remediationItems,
@@ -349,6 +412,9 @@ export const useVAPTScan = () => {
           break;
           
         case 9: // Remediation Verification
+          // Get remediation items from stage 8 or generate new ones if they don't exist
+          const existingRemediationItems = updatedStages[7]?.results?.remediationItems || generateRemediationData(vulnerabilities);
+          
           updatedStages[stageNumber - 1].results = {
             verificationResults: vulnerabilities.map(v => ({
               vulnerability: v,
@@ -357,7 +423,7 @@ export const useVAPTScan = () => {
             }))
           };
           
-          // Create final scan results with updated summary counts
+          // Ensure the final scan results include remediation items
           const finalResultsObj: VAPTScanResults = {
             id: scanResults?.id || `scan-${Date.now()}`,
             timestamp: scanResults?.timestamp || new Date().toISOString(),
@@ -440,8 +506,22 @@ export const useVAPTScan = () => {
     }
 
     try {
-      const doc = generateVAPTReport(scanResults);
-      doc.save(`VAPT_Report_${scanResults.target}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      // Ensure we have remediation items in the scan results
+      const updatedResults = {...scanResults};
+      
+      // Check if stage 8 has remediation items
+      if (!updatedResults.stages[7]?.results?.remediationItems) {
+        // If not, generate them
+        updatedResults.stages[7].results = {
+          ...(updatedResults.stages[7].results || {}),
+          remediationItems: generateRemediationData(updatedResults.vulnerabilities),
+          overallRisk: Math.random() > 0.6 ? 'High' : Math.random() > 0.3 ? 'Medium' : 'Low',
+          estimatedTimeToRemediate: `${Math.floor(Math.random() * 8) + 2} weeks`
+        };
+      }
+      
+      const doc = generateVAPTReport(updatedResults);
+      doc.save(`VAPT_Report_${updatedResults.target}_${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success("Report downloaded successfully");
     } catch (error) {
       console.error("Error generating report:", error);
