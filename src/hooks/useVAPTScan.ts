@@ -150,6 +150,37 @@ export const useVAPTScan = () => {
 
   // Helper function to generate random remediation data based on templates
   const generateRemediationData = (vulns: Vulnerability[]) => {
+    // If there are no vulnerabilities, generate mock ones for remediation
+    if (!vulns || vulns.length === 0) {
+      const mockVulns = [
+        {
+          id: "mock-1",
+          name: "SQL Injection Vulnerability",
+          description: "Input fields are not properly sanitized, allowing for potential SQL injection attacks.",
+          severity: "Critical" as const,
+          cveId: "CVE-2023-1234",
+          cvssScore: 9.8
+        },
+        {
+          id: "mock-2",
+          name: "Cross-Site Scripting (XSS)",
+          description: "The application does not properly sanitize user input, allowing for potential XSS attacks.",
+          severity: "High" as const,
+          cveId: "CVE-2023-5678",
+          cvssScore: 8.2
+        },
+        {
+          id: "mock-3",
+          name: "Outdated Library Dependencies",
+          description: "The application uses outdated libraries with known security vulnerabilities.",
+          severity: "Medium" as const,
+          cveId: "CVE-2023-9101",
+          cvssScore: 6.5
+        }
+      ];
+      vulns = mockVulns;
+    }
+
     return vulns.map(vuln => {
       // Select a random template
       const template = remediationTemplates[Math.floor(Math.random() * remediationTemplates.length)];
@@ -187,7 +218,7 @@ export const useVAPTScan = () => {
     try {
       const updatedStages = [...stages];
 
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Reduced timeout for faster development
 
       switch (stageNumber) {
         case 1: // Reconnaissance
@@ -381,15 +412,15 @@ export const useVAPTScan = () => {
           const resultsObj: VAPTScanResults = {
             id: `scan-${Date.now()}`,
             timestamp: new Date().toISOString(),
-            target: formValues.targetSystem, // Make sure target is set
+            target: formValues.targetSystem || 'localhost', // Ensure target is always set
             stages: updatedStages,
-            vulnerabilities,
+            vulnerabilities: vulnerabilities.length > 0 ? vulnerabilities : generateVulnerabilities(5), // Ensure we have vulnerabilities
             summary: {
-              criticalCount,
-              highCount,
-              mediumCount,
-              lowCount,
-              infoCount
+              criticalCount: criticalCount || Math.floor(Math.random() * 3),
+              highCount: highCount || Math.floor(Math.random() * 5),
+              mediumCount: mediumCount || Math.floor(Math.random() * 7),
+              lowCount: lowCount || Math.floor(Math.random() * 10),
+              infoCount: infoCount || Math.floor(Math.random() * 5)
             }
           };
           
@@ -409,6 +440,13 @@ export const useVAPTScan = () => {
             overallRisk: Math.random() > 0.6 ? 'High' : Math.random() > 0.3 ? 'Medium' : 'Low',
             estimatedTimeToRemediate: `${Math.floor(Math.random() * 8) + 2} weeks`
           };
+          
+          // Ensure scan results include remediation items
+          if (scanResults) {
+            const updatedResults = {...scanResults};
+            updatedResults.stages = updatedStages;
+            setScanResults(updatedResults);
+          }
           break;
           
         case 9: // Remediation Verification
@@ -453,7 +491,7 @@ export const useVAPTScan = () => {
       updatedStages[stageNumber - 1].completed = true;
       setStages(updatedStages);
 
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced timeout for faster development
       processStage(stageNumber + 1);
 
     } catch (error) {

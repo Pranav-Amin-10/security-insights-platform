@@ -36,18 +36,19 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     doc.setFontSize(16);
     doc.text('Vulnerability Summary', 14, 68);
     
+    // Ensure summary data with counts
     const summaryData = [
-      ['Critical', results.summary.criticalCount.toString()],
-      ['High', results.summary.highCount.toString()],
-      ['Medium', results.summary.mediumCount.toString()],
-      ['Low', results.summary.lowCount.toString()],
-      ['Informational', results.summary.infoCount.toString()],
+      ['Critical', (results.summary?.criticalCount || 0).toString()],
+      ['High', (results.summary?.highCount || 0).toString()],
+      ['Medium', (results.summary?.mediumCount || 0).toString()],
+      ['Low', (results.summary?.lowCount || 0).toString()],
+      ['Informational', (results.summary?.infoCount || 0).toString()],
       ['Total', (
-        results.summary.criticalCount +
-        results.summary.highCount +
-        results.summary.mediumCount +
-        results.summary.lowCount +
-        results.summary.infoCount
+        (results.summary?.criticalCount || 0) +
+        (results.summary?.highCount || 0) +
+        (results.summary?.mediumCount || 0) +
+        (results.summary?.lowCount || 0) +
+        (results.summary?.infoCount || 0)
       ).toString()]
     ];
     
@@ -65,10 +66,11 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     const currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : 110;
     doc.text('Identified Vulnerabilities', 14, currentY);
     
-    const vulnData = results.vulnerabilities.length > 0 ? 
+    // Ensure we have vulnerabilities data
+    const vulnData = results.vulnerabilities && results.vulnerabilities.length > 0 ? 
       results.vulnerabilities.map((vuln: Vulnerability) => [
-        vuln.severity,
-        vuln.name,
+        vuln.severity || 'Unknown',
+        vuln.name || 'Unnamed Vulnerability',
         vuln.cveId || 'N/A',
         vuln.cvssScore?.toString() || 'N/A'
       ]) : 
@@ -89,8 +91,8 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     
     let yPosition = 30;
     
-    if (results.vulnerabilities.length > 0) {
-      results.vulnerabilities.forEach((vuln: Vulnerability, index: number) => {
+    if (results.vulnerabilities && results.vulnerabilities.length > 0) {
+      results.vulnerabilities.slice(0, 5).forEach((vuln: Vulnerability, index: number) => {
         // Check if we need a new page
         if (yPosition > 250) {
           doc.addPage();
@@ -98,11 +100,11 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
         }
         
         doc.setFontSize(14);
-        doc.text(`${index + 1}. ${vuln.name}`, 14, yPosition);
+        doc.text(`${index + 1}. ${vuln.name || 'Unnamed Vulnerability'}`, 14, yPosition);
         yPosition += 8;
         
         doc.setFontSize(10);
-        doc.text(`Severity: ${vuln.severity}`, 20, yPosition);
+        doc.text(`Severity: ${vuln.severity || 'Unknown'}`, 20, yPosition);
         yPosition += 6;
         
         if (vuln.cveId) {
@@ -154,12 +156,14 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       doc.text('Remediation Plan', 14, 20);
       
       const remItems = results.stages[7].results.remediationItems;
-      const remData = remItems.length > 0 ? 
+      
+      // Ensure we have remediation items with proper data
+      const remData = remItems && remItems.length > 0 ? 
         remItems.map((item: any) => [
-          item.vulnerability.name,
-          item.priority,
-          item.timeEstimate,
-          item.suggestedFix
+          item.vulnerability?.name || 'Unknown Vulnerability',
+          item.priority || 'Unknown',
+          item.timeEstimate || 'Unknown',
+          item.suggestedFix || 'No remediation details available'
         ]) : 
         [['N/A', 'N/A', 'N/A', 'No remediation items available']];
       
@@ -194,9 +198,9 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
     
     // Add scan stages
     const stagesData = results.stages.map(stage => [
-      stage.name,
+      stage.name || 'Unknown Stage',
       stage.completed ? 'Completed' : 'Not Completed',
-      stage.description
+      stage.description || 'No description available'
     ]);
     
     doc.autoTable({
