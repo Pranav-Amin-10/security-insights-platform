@@ -1,5 +1,6 @@
+
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import 'jspdf-autotable'; // This imports the plugin and attaches it to jsPDF
 import { Vulnerability, VAPTScanResults, ComplianceAudit, SSLCheckResult } from '../types';
 
 // Add type definitions for jsPDF-autotable
@@ -53,6 +54,7 @@ export const generateVAPTReport = (results: VAPTScanResults): jsPDF => {
       ['Total', (criticalCount + highCount + mediumCount + lowCount + infoCount).toString()]
     ];
     
+    // Use the autoTable plugin
     doc.autoTable({
       startY: 73,
       head: [['Severity', 'Count']],

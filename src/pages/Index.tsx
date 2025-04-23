@@ -7,10 +7,10 @@ const Index = () => {
 
   useEffect(() => {
     // Redirect to dashboard
-    navigate("/");
+    navigate("/", { replace: true });
   }, [navigate]);
 
-  return <div>Redirecting...</div>;
+  return <div>Redirecting to dashboard...</div>;
 };
 
 export default Index;
