@@ -2,11 +2,11 @@
 import React, { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
-import { ConfigurationForm } from "@/components/vapt/ConfigurationForm";
-import { ScanProgress } from "@/components/vapt/ScanProgress";
-import { ScanResults } from "@/components/vapt/ScanResults";
-import { useVAPTScan } from "@/hooks/useVAPTScan";
-import { VAPTFormValues } from "@/types/vapt";
+import { ConfigurationForm } from "../components/ConfigurationForm";
+import { ScanProgress } from "../components/ScanProgress";
+import { ScanResults } from "../components/ScanResults";
+import { useVAPTScan } from "../hooks/useVAPTScan";
+import { VAPTFormValues } from "../types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

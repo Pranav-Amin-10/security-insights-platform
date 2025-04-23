@@ -1,5 +1,5 @@
 
-import { VAPTStage, VAPTScanResults, Vulnerability } from "@/types";
+import { VAPTStage, Vulnerability } from "@/types";
 
 export type VAPTFormValues = {
   targetSystem: string;

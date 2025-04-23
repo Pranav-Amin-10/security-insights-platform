@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
-import { VAPTFormValues } from "@/types/vapt";
+import { VAPTFormValues } from "../types";
 
 interface ConfigurationFormProps {
   values: VAPTFormValues;

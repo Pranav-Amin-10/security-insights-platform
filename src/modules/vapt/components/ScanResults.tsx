@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Tabs,
@@ -8,7 +7,7 @@ import {
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { VAPTScanResults, VAPTStage, Vulnerability } from "@/types";
-import { ReconnaissanceResults } from "@/types/vapt";
+import { ReconnaissanceResults } from "../types";
 
 interface ScanResultsProps {
   scanResults: VAPTScanResults;
