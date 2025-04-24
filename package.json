@@ -61,6 +61,7 @@
     "react-router-dom": "^6.26.2",
     "react-to-pdf": "^2.0.0",
     "recharts": "^2.12.7",
+    "rollup-plugin-javascript-obfuscator": "^1.0.4",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
