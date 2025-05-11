@@ -22,7 +22,7 @@ export const obfuscationConfig = {
   splitStringsChunkLength: 5,
   stringArray: true,
   stringArrayCallsTransform: true,
-  stringArrayEncoding: ['rc4'],
+  stringArrayEncoding: ['rc4'] as string[],
   stringArrayIndexShift: true,
   stringArrayRotate: true,
   stringArrayShuffle: true,

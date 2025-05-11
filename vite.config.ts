@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import obfuscatorPlugin from "rollup-plugin-javascript-obfuscator";
-import { obfuscationConfig } from "./src/build-utils/obfuscate.config.js";
+import { obfuscationConfig } from "./src/build-utils/obfuscate.config";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
