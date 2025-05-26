@@ -73,3 +73,7 @@ Checks the SSL/TLS configuration of any domain and displays information such as 
 - Yash Gadhiya
 - Shashank Patel
 - Het Solanki  
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
