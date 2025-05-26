@@ -1,73 +1,75 @@
-# Welcome to your Lovable project
+# Security Insights Platform
 
-## Project info
+A **web-based cybersecurity analysis tool** designed to provide automated vulnerability assessments, compliance audits, and SSL/TLS configuration checks. Built as part of an academic project (Jan–May 2025), the platform demonstrates how modern cybersecurity concepts can be simulated in a simplified and user-friendly format.
 
-**URL**: https://lovable.dev/projects/65bddc5d-342e-4bed-9b32-abf6ede499d9
+> 🚀 **Demo Link**: [Security Insights Platform](https://security-insights-platform.pages.dev/)
 
-## How can I edit this code?
+## 📌 Project Overview
 
-There are several ways of editing your application.
+The **Security Insights Platform** is divided into 3 core modules:
 
-**Use Lovable**
+### 1. Automated VAPT
+Simulates automated Vulnerability Assessment & Penetration Testing using mock data from APIs like **Shodan**, **ipinfo.io**, and **SSL Labs**. The user can input a target IP/domain to receive simulated scan results highlighting common misconfigurations, open ports, and outdated services.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/65bddc5d-342e-4bed-9b32-abf6ede499d9) and start prompting.
+### 2. Compliance Audit – GDPR & ISO 27001
+Helps users understand how well their systems align with compliance standards like **GDPR** and **ISO 27001**. The tool provides basic audit checklists and mock evaluation summaries.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 3. SSL/TLS Checker
+Checks the SSL/TLS configuration of any domain and displays information such as certificate validity, cipher strength, and expiration dates. Uses simulated results based on known best practices.
 
-**Use your preferred IDE**
+> *Note: This project uses **mock data** to simulate responses from real-world APIs (e.g., Shodan, SSL Labs, ipinfo.io). As students, we chose this approach to avoid hitting API rate limits or incurring costs for paid access.*
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🎯 Features
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- 🔍 Simulated VAPT Reports (Mock API-based)
+- ✅ GDPR & ISO 27001 Compliance Self-Audit
+- 🔐 SSL/TLS Health Checks
+- 📊 Clean UI for report viewing
+- 🌐 Works across major browsers and screen sizes
 
-Follow these steps:
+## ✅ How to Use
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Clone the repo  
+   ```bash
+   git clone https://github.com/yourusername/security-insights-platform.git
+   cd security-insights-platform
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+2. Install dependencies  
+   ```bash
+   npm install
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+3. Start the development server  
+   ```bash
+   npm run dev
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+4. Open in browser  
+   ```
+   http://localhost:3000
+   ```
 
-**Edit a file directly in GitHub**
+## 🛠 Future Enhancements
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Real-time scanning with API key integration
+- User login system and dashboard
+- PDF Report Generation
+- Enhanced error handling and data validation
+- Admin panel to track usage and logs
 
-**Use GitHub Codespaces**
+## 📚 References
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- https://developer.shodan.io/
+- https://ipinfo.io/developers
+- https://www.ssllabs.com/projects/ssllabs-apis/
+- https://gdpr.eu/
+- https://www.iso.org/isoiec-27001-information-security.html
+- https://platform.openai.com/
 
-## What technologies are used for this project?
+## 👥 Team Members
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/65bddc5d-342e-4bed-9b32-abf6ede499d9) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- Pranav Amin
+- Yash Gadhiya
+- Shashank Patel
+- Het Solanki  
