@@ -19,7 +19,7 @@ export function Layout({ children }: LayoutProps) {
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <header className="bg-blue-900 text-white shadow-md">
-        <div className="container mx-auto px-15 py-3 flex justify-between items-center">
+        <div className="container mx-auto px-2 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Shield size={24} />
             <h1 className="text-xl font-bold">Security Insights Platform</h1>
